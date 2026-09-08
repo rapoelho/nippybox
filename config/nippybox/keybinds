@@ -1,0 +1,73 @@
+  +  Space;Menu;Openbox Menu
+ALT + Space;Menu;Window Menu
+ALT + Shift  +  Space;Menu;Running Applications on All Desktops
+CTRL + ALT  +  Space;Menu;Apps Menu
+
+ + Tab;Alternate Window;On All Desktops
+ALT  +  Tab;Alternate Window;On Current Desktop
+
+CTRL  +  ALT  +  Right;Go To Desktop;Next
+CTRL  +  ALT  +  Left;Go To Desktop;Previous
+  +  =;Desktop;Add Desktop
+  +  -;Desktop;Remove Desktop
+  +  D;Desktop;Show Desktop
+  +  Shift  +  Right;Send to;Next Desktop
+  +  Shift  +  Left;Send to;Previous Desktop
+
+CTRL  +  Shift  +  R;Session;Reconfigure Openbox
+CTRL  +  Shift  + Backspace;Session;Restart Openbox
+CTRL + ALT + Delete;Session;Logout
+  +  L;Session;Lock
+
+  +  ALT + Up;Move Window;To Up
+  +  ALT + Down;Move Window;To Down
+  +  ALT + Right;Move Window;To Right
+  +  ALT + Left;Move Window;To Left
+
+  +  CTRL + Up;Resize Window;To Up
+  +  CTRL + Down;Resize Window;To Down
+  +  CTRL + Right;Resize Window;To Right 
+  +  CTRL + Left;Resize Window;To Left
+
+  +  Right;Snap Window;To Right
+  +  Left;Snap Window;To Left
+
+  +  Down;Window;Restore
+  +  C;Window;Close
+  +  Q;Window;Close
+ALT  +  F4;Window;Close
+  +  PgDn;Window;Minimize
+ALT  +  F5;Window;Minimize
+  +  Up;Window;Maximize
+ALT  +  F6;Window;Maximize
+ALT  +  F7;Window;Toggle Shade
+ALT  +  F8;Window;Toggle Window Decoration
+ALT  +  F9;Window;Toggle Window on All Desktops
+ALT  +  F10;Window;Toggle Fullscreen
+ALT  +  F11;Window;Toggle Window on Top
+ALT  +  F12;Window;Toggle Window on Bottom
+
+PrtSc;Screenshot;Print Now
+ALT  +  PrtSc;Screenshot;Print in 5 Seconds
+Shift  +  PrtSc;Screenshot;Print in 10 Seconds
+CTRL  +  PrtSc;Screenshot;Print Window
+  +  PrtSc;Screenshot;Print Area
+
+  +  T;Launch;Alacritty
+  +  Shift  +  T;Launch;XFCE Terminal
+  +  F;Launch;Thunar
+  +  W;Launch;Web Browser
+  +  E;Launch;Geany
+
+  +  A;Rofi;Launcher
+ALT  +  F1;Rofi;Launcher
+  +  R;Rofi;Run
+ALT  +  F2;Rofi;Run
+  +  N;Rofi;WiFi
+  +  V;Rofi;Clippy
+  +  Shift  +  E;Rofi;Emoji
+  +  Shift  +  W;Rofi;Wallpapers
+  +  M;Rofi;MPRIS Controller
+  +  X;Rofi;Powermenu
+  +  S;Rofi;Screenshot
+  +  F12;Rofi;ROAR - Rofi Of All Rofi

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+<action>
+	<icon>utilities-terminal</icon>
+	<name>Open Terminal Here</name>
+	<submenu></submenu>
+	<unique-id>1752674162117639-1</unique-id>
+	<command>exo-open --working-directory %f --launch TerminalEmulator</command>
+	<description></description>
+	<range></range>
+	<patterns>*</patterns>
+	<startup-notify/>
+	<directories/>
+</action>
+<action>
+	<icon>me.dusansimic.DynamicWallpaper</icon>
+	<name>Set Wallpaper (Colorize)</name>
+	<submenu></submenu>
+	<unique-id>1753468611876238-1</unique-id>
+	<command>nippy-wal --colorize %f</command>
+	<description></description>
+	<range>*</range>
+	<patterns>*</patterns>
+	<image-files/>
+</action>
+<action>
+	<icon>preferences-desktop-wallpaper</icon>
+	<name>Set Wallpaper</name>
+	<submenu></submenu>
+	<unique-id>1753468645492174-2</unique-id>
+	<command>nippy-wal --wallpaper %f</command>
+	<description></description>
+	<range>*</range>
+	<patterns>*</patterns>
+	<image-files/>
+</action>
+<action>
+	<icon>preferences-desktop-screensaver</icon>
+	<name>Set Lockscreen</name>
+	<submenu></submenu>
+	<unique-id>1753468699816117-3</unique-id>
+	<command>nippy-wal --lockscreen %f</command>
+	<description></description>
+	<range>*</range>
+	<patterns>*</patterns>
+	<image-files/>
+</action>
+</actions>

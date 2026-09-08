@@ -1,0 +1,31 @@
+#!/bin/bash
+
+RASI="$HOME/.config/rofi/clippy.rasi"
+HISTORY="$HOME/.clipboard.history"
+
+if [ $1 = "daemon" ]; then
+	while $(clipnotify -s clipboard):
+	do
+		isimage=$(xclip -selection clipboard -t TARGETS -o | grep -c image)
+		if  [ $isimage -gt 0 ]; then
+			echo "Multimedia content, skipped!"
+		else
+			clip=$(xclip -o -selection clipboard)
+			clip="${clip//$'\n'/\\n}"
+			last=$(tail -1 "$HISTORY")
+			if [ "$last" != "$clip" ]; then 
+				echo "New clip!"
+				[[ -z "$clip" ]] || echo "$clip" >> "$HISTORY"; 
+			fi
+		fi
+	done;
+elif [ $1 = "rofi" ]; then
+	INPUT=$(echo "$(tac $HISTORY)" | rofi -dmenu -i -theme $RASI)
+	[[ -z "$INPUT" ]] || echo -e "$INPUT" | xclip -selection "clipboard" -rmlastnl
+	
+	## Apagar o Histórico do Nippy Clippy
+	if [[ "$INPUT" == "Clear History" ]]; then
+		rm $HISTORY
+		echo "Clear History" >> $HISTORY
+	fi
+fi

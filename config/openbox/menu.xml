@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openbox_menu xmlns="http://openbox.org/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://openbox.org/  file:///usr/share/openbox/menu.xsd">
+  <menu id="root-menu" title="Menu" label="Openbox 3">
+		<separator label="Apps"/>
+		<item label="Terminal Emulator">
+			<action name="Execute">
+				<command>alacritty</command>
+			</action>
+		</item>
+		
+		<item label="File Manager">
+			<action name="Execute">
+				<command>thunar</command>
+			</action>
+		</item>
+		
+		<item label="Web Browser">
+			<action name="Execute">
+				<command>firefox</command>
+			</action>
+		</item>
+		
+		<item label="Text Editor">
+			<action name="Execute">
+				<command>geany</command>
+			</action>
+		</item>
+		<separator/>
+		<menu id="applications" label="All Applications" execute="xdg_menu --format openbox3-pipe --root-menu /etc/xdg/menus/arch-applications.menu" />
+		
+		<separator label="Screen Capture"/>
+		<menu id="shots" execute="nippy-shot --pipe" label="Screenshot"/>
+		<menu id="rec" execute="nippy-rec --pipe" label="Screen Recorder"/>
+
+		<separator label="System"/>
+		<menu id="preferences" label="Preferences">
+			<separator label="Desktop Settings"/>
+			
+			<item label="Appearance Settings">
+				<action name="Execute">
+					<command>xfce4-appearance-settings</command>
+				</action>
+			</item>
+			
+			<item label="Change Wallpaper">
+				<action name="Execute">
+					<command>rofi-wal</command>
+				</action>
+			</item>
+			
+			<menu id="CompositingPipeMenu" execute="nippy-compositor pipe" label="Compositor"/>
+			
+			<menu id="obconfig" label="Openbox Settings">
+				<separator label="Openbox"/>
+				<item label="Openbox Settings">
+					<action name="Execute">
+						<command>obconf-qt</command>
+					</action>
+				</item>
+				
+				<separator/>
+				<item label="Reconfigure">
+					<action name="Reconfigure"/>
+				</item>
+				<item label="Restart">
+					<action name="Restart"/>
+				</item>
+				<separator label="Edit Files"/>
+				<item label="Edit menu.xml">
+					<action name="Execute">
+						<command>exo-open ~/.config/openbox/menu.xml</command>
+					</action>
+				</item>
+				<item label="Edit rc.xml">
+					<action name="Execute">
+						<command>exo-open ~/.config/openbox/rc.xml</command>
+					</action>
+				</item>
+				<item label="Edit autostart">
+					<action name="Execute">
+						<command>exo-open ~/.config/openbox/autostart</command>
+					</action>
+				</item>
+			</menu>
+			<!--<menu id="PanelPipeMenu" execute="&pipes;/ac-panel" label="Panel / Bar"/>-->
+			<separator/>
+			<!--<menu id="StylePipeMenu" execute="&pipes;/ac-change-style" label="Change Style"/>
+			<menu id="FontPipeMenu" execute="&pipes;/ac-change-fonts" label="Change Font"/>
+			<menu id="SchemePipeMenu" execute="&pipes;/ac-change-scheme" label="Terminal Colors"/>
+			<separator/>-->
+			
+			<separator label="Qt Settings"/>
+			<item label="QT5 Settings">
+				<action name="Execute">
+					<command>qt5ct</command>
+				</action>
+			</item>
+			
+			<item label="QT6 Settings">
+				<action name="Execute">
+					<command>qt6ct</command>
+				</action>
+			</item>
+			
+			<separator label="System Settings"/>
+			<menu id="XrandrPipeMenu" execute="ac-randr" label="Display / Monitor"/>
+			<item label="Audio Settings">
+				<action name="Execute">
+					<command>pavucontrol</command>
+				</action>
+			</item>
+			<item label="Power Settings">
+				<action name="Execute">
+					<command>xfce4-power-manager-settings</command>
+				</action>
+			</item>
+			<item label="Settings Manager">
+				<action name="Execute">
+					<command>xfce4-settings-manager</command>
+				</action>
+			</item>
+		</menu>
+		<menu id="SystemPipeMenu" execute="nippy-sysinfo --pipe" label="Stats"/>
+		<item label="Log Out">
+			<action name="Execute">
+				<command>rofi-powermenu</command>
+			</action>
+		</item>
+	</menu>
+</openbox_menu>
+<!-- vim:sw=2
+-->

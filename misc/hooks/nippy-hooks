@@ -1,0 +1,25 @@
+#!/bin/bash
+
+## Copyright (C) 2020-2024 Aditya Shakya <adi1090x@gmail.com>
+##
+## Perform various operations for Archcraft
+## Modificado por Rapoelho para uso no Nippybox
+
+fix_thunar() {
+	## Remove thunar wallpaper plugin
+	twplug='/usr/lib/thunarx-3/thunar-wallpaper-plugin.so'
+	if [[ -e "$twplug" ]]; then
+		rm -rf "$twplug"
+	fi
+}
+
+main() {
+    local hookname="$1"
+
+    case "$hookname" in
+        fix-thunar)   		fix_thunar ;;
+        "")           		echo "Nothing to do!";;
+    esac
+}
+
+main "$@"

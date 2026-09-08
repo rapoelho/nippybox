@@ -1,0 +1,97 @@
+#! /bin/bash
+source "$HOME/.config/nippybox/config"
+
+killCompositor () {
+	if [[ $(pidof picom) ]]; then
+			killall picom
+	fi
+	
+	if [[ $(pidof xcompmgr) ]]; then
+			killall xcompmgr
+	fi
+}
+
+setCompositor () {
+	if [[ "$1" == "simple" ]]; then
+		sed -i 's|^compositor=.*|compositor=xcompmgr|' $HOME/.config/nippybox/config
+		runCompositor simple
+	elif [[ "$1" == "default" ]]; then
+		sed -i 's|^compositor=.*|compositor=picom|' $HOME/.config/nippybox/config
+		runCompositor default
+	else
+		echo "ERROR: Invalid Compositor"
+	fi
+}
+
+runCompositor () {
+	killCompositor
+	if [[ "$1" == "simple" ]]; then
+		xcompmgr
+	elif [[ "$1" == "default" ]]; then	
+		picom
+	else
+		echo "ERROR: Invalid Compositor"
+	fi
+}
+
+startCompositor () {
+	killCompositor
+	if [[ "$compositor" == "xcompmgr" ]]; then
+		xcompmgr -cCfF -t-5 -l-5 -r4.2 -o.55 -D6
+	elif [[ "$compositor" == "picom" ]]; then	
+		picom
+	else
+		echo "ERROR: Invalid Compositor"
+	fi
+}
+
+
+pipemenu () {
+	MENUS_LIBDIR="$HOME/.config/openbox/"
+	source "$HOME/.config/nippybox/config"
+
+	if ! . "$MENUS_LIBDIR/pipebase.cfg" 2> /dev/null; then
+		echo $"Error: Failed to locate pipebase.cfg in $MENUS_LIBDIR" >&2
+		exit 1
+	fi
+	
+	menuStart
+		if ! [[ $(pidof picom) || $(pidof xcompmgr) ]]; then
+			menuItem 'Enable Compositor' "$0 start"
+		else
+			if [[ "$compositor" == "picom" ]]; then
+				menuSeparator 'Using picom (Default)'
+				menuItem "Set xcompmgr as default" "$0 set simple"
+			else
+				menuSeparator 'Using xcompmgr (Simple)'
+				menuItem "Set picom as default" "$0 set default"
+			fi
+			
+			if [[ $(pidof picom) ]]; then
+				menuItem "Use xcompmgr temporarily" "$0 run simple"
+			elif [[ $(pidof xcompmgr) ]]; then
+				menuItem "Use picom temporarily" "$0 run default"
+			fi
+			menuSeparator 'Settings'
+			menuItem 'Restart Compositor' "$0 start"
+			menuItem 'Disable Compositor' "$0 stop"
+		fi
+	menuEnd
+}
+
+
+if [[ "$1" == "set" ]]; then
+	setCompositor $2
+elif [[ "$1" == "info" ]]; then
+	echo -e "## Compositor in use: $compositor"
+elif [[ "$1" == "run" ]]; then
+	runCompositor $2
+elif [[ "$1" == "start" ]]; then
+	startCompositor
+elif [[ "$1" == "stop" ]]; then
+	killCompositor
+elif [[ "$1" == "pipe" ]]; then
+	pipemenu
+fi
+
+exit 0

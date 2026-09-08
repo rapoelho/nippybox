@@ -1,0 +1,3 @@
+## Configure qual compositor usar. 
+## As opções são o Picom e o Xcompmgr. O Picom é o padrão, mas pode ter problemas com alguns Hardwares
+compositor=picom

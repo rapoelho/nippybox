@@ -1,0 +1,138 @@
+#!/bin/bash
+
+## Script Original por Aditya Shakya <adi1090x@gmail.com>
+## Modificado por Rapoelho, para juntar o "ob-volume" e o "ob-brightness" para uso no Nippybox
+
+volume () {
+    notify_cmd='dunstify -u low -h string:x-dunst-stack-tag:obvolume'
+
+    # Get Volume
+    get_volume() {
+        echo "`pulsemixer --get-volume | cut -d' ' -f1`"
+    }
+
+    # Notify
+    notify_user() {
+        ${notify_cmd} "Volume : $(get_volume)%"
+    }
+
+    # Increase Volume
+    inc_volume() {
+        [[ `pulsemixer --get-mute` == 1 ]] && pulsemixer --unmute
+        pulsemixer --max-volume 100 --change-volume +5 && notify_user
+    }
+
+    # Decrease Volume
+    dec_volume() {
+        [[ `pulsemixer --get-mute` == 1 ]] && pulsemixer --unmute
+        pulsemixer --max-volume 100 --change-volume -5 && notify_user
+    }
+
+    # Toggle Mute
+    toggle_mute() {
+        if [[ `pulsemixer --get-mute` == 0 ]]; then
+            pulsemixer --toggle-mute && ${notify_cmd} -i "$iDIR/volume-mute.png" "Mute"
+        else
+            pulsemixer --toggle-mute && ${notify_cmd} -i "$icon" "Unmute"
+        fi
+    }
+
+    # Toggle Mic
+    toggle_mic() {
+        ID="`pulsemixer --list-sources | grep 'Default' | cut -d',' -f1 | cut -d' ' -f3`"
+        if [[ `pulsemixer --id $ID --get-mute` == 0 ]]; then
+            pulsemixer --id ${ID} --toggle-mute && ${notify_cmd} -i "$iDIR/microphone-mute.png" "Microphone Switched OFF"
+        else
+            pulsemixer --id ${ID} --toggle-mute && ${notify_cmd} -i "$iDIR/microphone.png" "Microphone Switched ON"
+        fi
+    }
+
+    # Execute accordingly
+    if [[ -x `which pulsemixer` ]]; then
+        if [[ "$1" == "--get" ]]; then
+            get_volume
+        elif [[ "$1" == "--inc" ]]; then
+            inc_volume
+        elif [[ "$1" == "--dec" ]]; then
+            dec_volume
+        elif [[ "$1" == "--toggle" ]]; then
+            toggle_mute
+        elif [[ "$1" == "--toggle-mic" ]]; then
+            toggle_mic
+        else
+            echo $(get_volume)%
+        fi
+    else
+        ${notify_cmd} "'pulsemixer' is not installed."
+    fi
+}
+
+bright () {
+    # Graphics card
+    CARD=`ls /sys/class/backlight | head -n 1`
+
+    # Get brightness
+    get_backlight() {
+        if [[ "$CARD" == *"intel_"* ]]; then
+            BNESS=`brightnessctl | grep "Current" | awk -F '(' '{print $2}' | cut -d ")" -f1`
+            LIGHT=${BNESS%.*}
+        else
+            LIGHT=$(printf "%.0f\n" `light -G`)
+        fi
+        echo "${LIGHT}"
+    }
+
+    # Notify
+    notify_bl() {
+		brightness=$(get_backlight)
+		dunstify -u low -h string:x-dunst-stack-tag:obbacklight "Brightness : $brightness"
+    }
+
+    # Increase brightness
+    inc_backlight() {
+       brightnessctl set +5%
+       notify_bl
+    }
+
+    # Decrease brightness
+    dec_backlight() {
+        brightnessctl set 5%-
+        notify_bl 
+    }
+
+    # Execute accordingly
+    if [[ "$1" == "--get" ]]; then
+        get_backlight
+    elif [[ "$1" == "--inc" ]]; then
+        inc_backlight
+    elif [[ "$1" == "--dec" ]]; then
+        dec_backlight
+    else
+        get_backlight
+    fi
+}
+
+media () {
+	if [[ "$1" == "--play-pause" ]]; then
+        playerctl play-pause
+    elif [[ "$1" == "--pause-all" ]]; then
+        playerctl -a pause
+    elif [[ "$1" == "--next" ]]; then
+        playerctl next
+    elif [[ "$1" == "--prev" ]]; then
+		playerctl previous
+	elif [[ "$1" == "--stop" ]]; then
+		playerctl stop
+    else
+		echo "Players:"
+        playerctl -l
+    fi
+}
+
+if [[ "$1" == "audio" ]];then
+    volume $2
+elif [[ "$1" == "bright" ]]; then
+    bright $2
+elif [[ "$1" == "media" ]]; then
+	media $2
+fi

@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+import os
+import sys
+import threading
+import subprocess  # Garante o ciclo de chamadas do xsettingsd
+from Xlib import X, display
+
+# Importações dos módulos Unix locais
+from nippylib.xsettings import get_clean_settings, save_and_sync, XSETTINGSD_CONF
+from nippylib.peripherals import apply_mouse_settings, save_peripheral_state
+
+PIPE_FILE = os.path.expanduser("~/.config/xsettings-control")
+current_settings = {}
+
+def check_and_log_changes():
+    global current_settings
+    new_settings = get_clean_settings()
+    if not new_settings and not current_settings: 
+        return
+
+    if not current_settings:
+        current_settings = new_settings
+        print("[INFO] Daemon iniciado. Monitorando Openbox XSettings...", flush=True)
+        save_and_sync(new_settings)
+        return
+
+    changes_detected = False
+    for k, v in new_settings.items():
+        if k not in current_settings or current_settings[k] != v:
+            print(f"[ALTERAÇÃO] {k}: -> '{v}'", flush=True)
+            changes_detected = True
+
+    if changes_detected:
+        current_settings = new_settings
+        save_and_sync(new_settings)
+
+def listen_for_commands():
+    if os.path.exists(PIPE_FILE): 
+        os.remove(PIPE_FILE)
+    os.mkfifo(PIPE_FILE)
+    
+    print(f"[INFO] Escuta de controle ativa em: {PIPE_FILE}", flush=True)
+    
+    while True:
+        with open(PIPE_FILE, "r") as fifo:
+            for line in fifo:
+                line = line.strip()
+                if not line or " " not in line: 
+                    continue
+                
+                # Divide o comando enviado pelo pipe limitando a 1 split
+                parts = line.split(maxsplit=1)
+                
+                # CORREÇÃO DA SINTAXE: Acessa os índices corretos da lista via colchetes []
+                key = parts[0].strip()
+                val = parts[1].strip().strip('"')
+                
+                low_key = key.lower()
+                
+                # Redireciona os comandos de mouse/teclado para o peripherals.py
+                if "mouse/" in low_key or "keyboard/" in low_key:
+                    print(f"[PERIFÉRICO] Comando recebido -> {key}: {val}", flush=True)
+                    save_peripheral_state(key, val)
+                    apply_mouse_settings()
+                    continue
+                
+                # Configurações nativas de interface visual (XSettings)
+                print(f"[COMANDO AMBIENTE] Alterando -> {key}: {val}", flush=True)
+                current_settings[key] = val
+                save_and_sync(current_settings)
+                
+                # Sincroniza o barramento XSettings
+                res = subprocess.run(["pidof", "xsettingsd"], stdout=subprocess.DEVNULL)
+                if res.returncode == 0:
+                    subprocess.run(["killall", "-HUP", "xsettingsd"], stdout=subprocess.DEVNULL)
+                else:
+                    subprocess.Popen(["xsettingsd"], stdout=subprocess.DEVNULL)
+
+def main():
+    if not os.environ.get("DISPLAY"): 
+        sys.exit(1)
+
+    # Inicializa o barramento estético e o hardware salvo no boot
+    if os.path.exists(XSETTINGSD_CONF):
+        subprocess.Popen(["xsettingsd"], stdout=subprocess.DEVNULL)
+    apply_mouse_settings()
+
+    # Dispara a thread de controle remoto do pipe
+    threading.Thread(target=listen_for_commands, daemon=True).start()
+    check_and_log_changes()
+
+    # Loop de monitoramento do X11
+    d = display.Display()
+    root = d.screen().root
+    root.change_attributes(event_mask=X.PropertyChangeMask)
+    
+    while True:
+        ev = d.next_event()
+        if ev.type == X.PropertyNotify and ev.atom == d.get_atom('_XSETTINGS_SETTINGS'):
+            check_and_log_changes()
+
+if __name__ == "__main__":
+    main()

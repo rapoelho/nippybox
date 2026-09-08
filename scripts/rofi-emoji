@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+
+RASI="$HOME/.config/rofi/emoji.rasi"
+dbLocation="$HOME/.config/nippybox/rofi-emoji"
+stateDir="$HOME/.local/state"
+historyFile="${stateDir}/emoji-history.txt"
+
+# Do not sort results
+limitRecent="$EMOJI_LIMIT_RECENT"
+
+prepareDB() {
+    # Create list directory
+    if [ ! -d "$dbLocation" ]; then
+        mkdir -p "$dbLocation"
+    fi
+
+	if ! [[ -f "$dbLocation/emojis.txt" ]]; then
+		emojis=$(curl -sSL "https://unicode.org/Public/emoji/latest/emoji-test.txt")
+		printf "%s" "$emojis" | sed -ne 's/^.*; fully-qualified.*# \(\S*\) \S* \(.*$\)/\1 \2/gp' >"$dbLocation/emojis.txt"
+		echo "Downloaded default emoji set."
+	fi
+}		
+
+prepareList() {
+    local result
+    result=$(cat "$dbLocation"/emojis.txt)
+    
+    if [ -n "$limitRecent" ] && [ "$limitRecent" -eq 0 ]; then
+        printf "%s" "$result"
+        return
+    fi
+
+    printf "%s\n%s" "$(getRecent "$limitRecent")" "$result" | cat -n - | sort -uk2 | sort -n | cut -f2-
+}
+
+getRecent() {
+    local limit=${1}
+    local recent_file="$historyFile"
+    
+    if [ ! -f "$recent_file" ]; then
+        touch "$recent_file"
+    fi
+    
+    # TODO: improve this messy line
+    local result
+    result=$(sed -e '/^$/d' "$recent_file" |
+        sort |
+        uniq -c |
+        sort -k1rn |
+        sed -e 's/^\s*//' |
+        cut -d' ' -f2-)
+        
+    if [ -z "$limit" ]; then
+        echo "$result"
+    else
+        echo "$result" | head -n "$limit"
+    fi
+}
+
+addRecent() {
+    if [ -z "$1" ]; then return; fi
+    if [ ! -d "$stateDir" ]; then
+        mkdir -p "$stateDir"
+    fi
+    
+    echo "$1" >>"$historyFile"
+}
+
+prepareDB
+result=$(prepareList | rofi -i -dmenu -theme $RASI --kb-custom-1 "Alt+1" --kb-custom-2 "Alt+2")
+exit_value="$?"
+addRecent "$result"
+result=$(echo "$result" | grep -o '^\S\+' | tr -d '\n')
+
+if [[ "$result" == "" ]]; then
+	echo "No Emoji Selected"
+	exit
+else
+	printf "%s" "$*" "$result" | xclip -selection clipboard
+	exit
+fi

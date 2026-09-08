@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# Caminho do Named Pipe utilizado pelo daemon
+PIPE_FILE="$HOME/.config/xsettings-control"
+
+# Função para exibir instruções de uso
+exibir_ajuda() {
+    echo "Usage: xset-change [Key] [Value]"
+    echo "Exemples:"
+    echo "  xset-change Gtk/ThemeName Arc-Dark"
+    echo "  xset-change Gtk/IconThemeName Papirus-Dark"
+    echo "  xset-change Gtk/FontName 'Sans 11'"
+    exit 1
+}
+
+# Verifica se os dois argumentos obrigatórios foram passados
+if [ $# -lt 2 ]; then
+    echo "[ERROr] Insufficient arguments."
+    exibir_ajuda
+fi
+
+# Captura a chave (primeiro argumento) e junta o restante como o valor (trata espaços)
+CHAVE="$1"
+shift
+VALOR="$*"
+
+# Verifica se o Named Pipe do daemon existe (garante que o daemon está rodando)
+if [ ! -p "$PIPE_FILE" ]; then
+    echo "[ERRO] The nippy-settings-daemon does not appear to be running."
+    #~ echo "Certifique-se de que o Pipe existe em: $PIPE_FILE"
+    exit 1
+fi
+
+# Envia a configuração formatada para o Named Pipe do daemon
+echo "$CHAVE $VALOR" > "$PIPE_FILE"
+
+echo "[OK] Sent to the daemon -> $CHAVE: $VALOR"
+

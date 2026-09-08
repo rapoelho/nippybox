@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+## Copyright (C) 2020-2024 Aditya Shakya <adi1090x@gmail.com>
+
+# Import Current Theme
+DIR="$HOME/.config/rofi"
+
+launcher () {
+	RASI="$DIR/launcher.rasi"
+	rofi \
+    -show drun \
+	-kb-cancel Escape \
+	-theme ${RASI}
+}
+
+run () {
+	RASI="$DIR/runner.rasi"
+	rofi \
+    -show run \
+	-theme ${RASI}
+}
+
+window () {
+	RASI="$DIR/window.rasi"
+	rofi \
+    -show window \
+    -window-thumbnail \
+    -window-match-fields title \
+	-theme ${RASI}
+}
+
+keybinds () {
+	RASI="$DIR/keys.rasi"
+	column -t -s ';' ~/.config/nippybox/keybinds | rofi \
+	-i -dmenu \
+	-markup-rows \
+	-theme ${RASI}
+}
+
+if [[ "$1" == "run" ]]; then
+	run
+elif [[ "$1" == "window" ]]; then
+	window
+elif [[ "$1" == "keys" ]]; then
+	keybinds
+else
+	launcher
+fi

@@ -1,0 +1,99 @@
+#! /bin/bash
+
+pipe () {
+	MENUS_LIBDIR="$HOME/.config/openbox/"
+	
+	if ! . "$MENUS_LIBDIR/pipebase.cfg" 2> /dev/null; then
+		echo $"Error: Failed to locate pipebase.cfg in $MENUS_LIBDIR" >&2
+		exit 1
+	fi
+
+	menuStart
+		if ! [[ $(pidof redshift) ]]; then
+			menuSeparator "Redshift Disabled"
+			menuItem 'Enable Redshift Now' "$0"
+			
+		else
+			menuSeparator "Redshift Enabled"
+			menuItem 'Disable Redshift' "$0 --stop"
+			menuSeparator "Pause Redshift"
+			menuItem 'Pause for 5 minutes' "$0 --pause 5"
+			menuItem 'Pause for 10 minutes' "$0 --pause 10"
+			menuItem 'Pause for 15 minutes' "$0 --pause 15"
+			menuItem 'Pause for 30 minutes' "$0 --pause 30"
+			menuItem 'Pause for 45 minutes' "$0 --pause 45"
+			menuItem 'Pause for 1 hour' "$0 --pause 60"
+		fi
+	menuEnd
+	
+}
+
+pauseRedshift () {
+	minutes=$1
+	pauseTime=$((60 * minutes))
+	
+	pauseStart=$(date +%s)
+	pauseEnd=$(( $pauseTime + $pauseStart ))
+	
+	dunstify -u low "Redshift paused until `date -d"@$pauseEnd" +"%H:%M:%S"`"
+	stopRedshift
+	sleep $pauseTime
+	startRedshift
+	dunstify -u low "Redshift resumed"
+
+}
+
+geoLocate () {
+	if loc=$(curl -sf https://ipinfo.io/json); then ## Usando o argumento -sf para silenciar o curl e repassar o status de falha ao if
+		echo "## Connection OK"
+		echo "## Detecting Latitude and Longitude..."
+
+	## Usando o read para ler a Latitude e Longitude...
+		IFS=, read lat lon <<EOF
+		$(printf '%s' "$loc"| awk -F'"' '/loc/ { print $4 }')
+EOF
+	## ^ Usando o printf para exibir a saída e usando o awk para detectar padrões
+
+	else
+		## Se a conexão falhar, usar as coordenadas padrão
+		echo "## ERROR: Connection failed"
+		echo "## Using Latitude and Longitude 0:0"
+	
+		lat=0
+		lon=0
+fi
+}
+
+stopRedshift () {
+	if [[ $(pidof redshift) ]]; then
+		killall redshift
+	fi
+}
+
+startRedshift () {
+	geoLocate
+	echo -e "\n## Starting Redshift..."
+	exec redshift -l "$lat:$lon"
+}
+
+infoRedshift() {
+	geoLocate 
+	echo -e "\n## Redshift Info"
+	exec redshift -p -l "$lat:$lon"
+}
+
+
+if [[ "$1" == "--geo" ]]; then
+	geoLocate 
+	echo -e "Latitude: $lat\nLongitude: $lon"
+elif [[ "$1" == "--info" ]]; then
+	infoRedshift
+elif [[ "$1" == "--pipe" ]]; then
+	pipe
+elif [[ "$1" == "--stop" ]]; then
+	stopRedshift
+elif [[ "$1" == "--pause" ]]; then
+	pauseRedshift $2
+else
+	startRedshift
+fi

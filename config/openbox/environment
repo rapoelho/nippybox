@@ -1,0 +1,8 @@
+## User-Specific Variables
+## -----------------------
+
+## Scripts
+PATH="$HOME/.local/bin:$PATH"; export PATH
+
+## Other
+XDG_CURRENT_DESKTOP='openbox'; export XDG_CURRENT_DESKTOP

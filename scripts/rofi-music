@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+
+## Copyright (C) 2020-2024 Aditya Shakya <adi1090x@gmail.com>
+## Modificado por Rapoelho para uso no Nippybox.
+## Adicionado o suporte ao MPRIS
+
+# Import Current Theme
+DIR="$HOME/.config/rofi"
+RASI="$DIR/music.rasi"
+
+# Theme Elements
+player="$(playerctl -l | head -n 1)"
+status=$(playerctl status)
+if [[ -z "$player" ]]; then
+	prompt="No Players"
+	mesg="No MPRIS Players Running"
+else
+	music=`playerctl metadata title`
+	prompt="Player: $player"
+	mesg=$(playerctl -p "$player" metadata --format "{{title}} :: current {{ duration(position) }}")
+fi
+
+# Options
+layout=`cat ${RASI} | grep 'USE_ICON' | cut -d'=' -f2`
+if [[ "$layout" == 'NO' ]]; then
+	option_1=" Previous"
+	if [[ ${status} == *"Playing"* ]]; then
+		option_2=" Pause"
+	else
+		option_2=" Play"
+	fi
+	option_3=" Stop"
+	option_4=" Next"
+else
+	option_1=""
+	if [[ ${status} == *"Playing"* ]]; then
+		option_2=""
+	else
+		option_2=""
+	fi
+	option_3=""
+	option_4=""
+fi
+
+# Toggle Actions
+active=''
+urgent=''
+
+# Rofi CMD
+rofi_cmd() {
+	rofi -dmenu \
+		-p "$prompt" \
+		-mesg "$mesg" \
+		${active} ${urgent} \
+		-markup-rows false \
+		-theme ${RASI}
+}
+
+# Pass variables to rofi dmenu
+run_rofi() {
+	echo -e "$option_1\n$option_2\n$option_3\n$option_4" | rofi_cmd
+}
+
+# Execute Command
+run_cmd() {
+	if [[ "$1" == '--opt1' ]]; then
+		playerctl previous
+	elif [[ "$1" == '--opt2' ]]; then
+		playerctl play-pause
+	elif [[ "$1" == '--opt3' ]]; then
+		playerctl stop
+	elif [[ "$1" == '--opt4' ]]; then
+		playerctl next
+	fi
+}
+
+# Actions
+chosen="$(run_rofi)"
+case ${chosen} in
+    $option_1)
+		run_cmd --opt1
+        ;;
+    $option_2)
+		run_cmd --opt2
+        ;;
+    $option_3)
+		run_cmd --opt3
+        ;;
+    $option_4)
+		run_cmd --opt4
+        ;;
+esac

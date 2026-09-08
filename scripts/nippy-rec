@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+
+## Copyright (C) 2020-2024 Aditya Shakya <adi1090x@gmail.com>
+## Modificado por Rapoelho, para incluir a opção desse Script ser um Pipemenu
+##
+## Openbox Pipemenu to Record Screen with slop and ffmpeg
+
+if ! [ -e "/tmp/nippy-rec" ]; then
+	echo "framerate=25" > /tmp/nippy-rec
+fi
+
+source /tmp/nippy-rec
+
+setFramerate () {
+	echo "framerate=$1" > /tmp/nippy-rec
+}
+
+pipemenu () {
+	MENUS_LIBDIR="$HOME/.config/openbox/"
+	if ! . "$MENUS_LIBDIR/pipebase.cfg" 2> /dev/null; then
+		echo $"Error: Failed to locate pipebase.cfg in $MENUS_LIBDIR" >&2
+		exit 1
+	fi
+
+	menuStart
+		if [[ `pidof ffmpeg` ]]; then
+			menuSeparator "Recording: $(recTime)"
+			menuItem 'Stop Screen Recorder' "pkill ffmpeg"
+		fi
+		menuSeparator 'Record Desktop'
+		menuItem 'Record Desktop (With Audio)' "$0 --screen"
+		menuItem 'Record Desktop (Desktop Audio)' "$0 --screen-desktop"
+		menuItem 'Record Desktop (No Audio)' "$0 --screen-na"
+		
+		menuSeparator 'Record Area'
+		menuItem 'Record Area (With Audio)' "$0 --area"
+		menuItem 'Record Area (Desktop Audio)' "$0 --area-desktop"
+		menuItem 'Record Area (No Audio)' "$0 --area-na"
+        
+		if [[ "$framerate" == 60 ]]; then
+			menuSeparator 'Framerate: 60 FPS'
+		elif [[ "$framerate" == 30 ]]; then
+			menuSeparator 'Framerate: 30 FPS'
+		elif [[ "$framerate" == 25 ]]; then
+			menuSeparator 'Framerate: 25 FPS'
+		fi
+		menuItem 'Set Framerate to 25 FPS' "$0 --setframerate 25"
+		menuItem 'Set Framerate to 30 FPS' "$0 --setframerate 30"
+		menuItem 'Set Framerate to 60 FPS' "$0 --setframerate 60"
+    menuEnd
+}
+
+recTime () {
+	source /tmp/nippy-rec-time
+	currentTime=$(date +%s)
+	
+	time=$(( $currentTime - $startTime ))
+	
+	hours=$(( $time / 3600 ))
+	minutes=$(( ($time - $hours * 3600) / 60))
+	seconds=$(( $time % 60 ))
+	
+	echo -e "${hours}h:${minutes}m:${seconds}s."
+}
+
+# File
+time=`date +%Y-%m-%d-%H-%M-%S`
+screen=`xrandr | grep 'current' | head -n1 | cut -d',' -f2 | tr -d '[:blank:],current'`
+dir="`xdg-user-dir VIDEOS`/Screenrecorder"
+file="Capture_${time}.mp4"
+
+# Directory
+if [[ ! -d "$dir" ]]; then
+	mkdir -p "$dir"
+fi
+
+# notify
+notify_user () {
+	notify_cmd="dunstify -u low -h string:x-dunst-stack-tag:obscreenrecord"
+	if [[ -e "$dir/$file" ]]; then
+		${notify_cmd} "Saved in $dir"
+	else
+		${notify_cmd} "Video Deleted."
+	fi
+}
+
+# countdown
+countdown () {
+	for sec in `seq $1 -1 1`; do
+		dunstify -t 1000 -h string:x-dunst-stack-tag:screenrecordtimer "Starting in : $sec"
+		sleep 1
+	done
+	
+	echo "startTime=$(date +%s)" > /tmp/nippy-rec-time
+}
+
+# capture
+rec_screen() {
+	countdown '3'
+	sleep 1
+	if [[ "$1" == "noaudio" ]]; then
+		ffmpeg -video_size ${screen} -framerate $framerate -f x11grab -i :0.0+0,0 ${dir}/${file}
+	elif [[ "$1" == "desktop" ]]; then
+		desktopAudio="$(pactl list sinks | grep $(pactl get-default-sink).monitor | cut -d : -f 2)"
+		ffmpeg -f x11grab -video_size ${screen} -framerate $framerate -i :0.0 -f pulse -i ${desktopAudio} -preset ultrafast -crf 18 -pix_fmt yuv420p ${dir}/${file}
+	else
+		ffmpeg -video_size ${screen} -framerate $framerate -f x11grab -i :0.0+0,0 -f pulse -ac 2 -i default ${dir}/${file}
+	fi
+	notify_user
+}
+
+rec_area() {
+	get_win_data=$(slop -f "%x %y %w %h %g %i") || exit 1
+	read -r X Y < <(echo $get_win_data)
+	
+	countdown '3'
+	sleep 1
+	if [[ "$1" == "noaudio" ]]; then
+		ffmpeg -video_size ${W}x${H} -framerate $framerate -f x11grab -i :0.0+${X},${Y} ${dir}/${file}
+	elif [[ "$1" == "desktop" ]]; then
+		desktopAudio="$(pactl list sinks | grep $(pactl get-default-sink).monitor | cut -d : -f 2)"
+		ffmpeg -video_size ${W}x${H} -framerate $framerate -f x11grab -i :0.0+${X},${Y} -f pulse -i ${desktopAudio} ${dir}/${file}
+	else
+		ffmpeg -video_size ${W}x${H} -framerate $framerate -f x11grab -i :0.0+${X},${Y} -f pulse -ac 2 -i default ${dir}/${file}
+	fi
+	notify_user
+}
+
+if [[ "$1" == "--screen" ]]; then
+	rec_screen
+elif [[ "$1" == "--screen-desktop" ]]; then
+	rec_screen desktop
+elif [[ "$1" == "--area" ]]; then
+	rec_area
+elif [[ "$1" == "--screen-na" ]]; then
+	rec_screen noaudio
+elif [[ "$1" == "--area-desktop" ]]; then
+	rec_area desktop
+elif [[ "$1" == "--area-na" ]]; then
+	rec_area noaudio
+elif [[ "$1" == "--pipe" ]]; then
+	pipemenu
+elif [[ "$1" == "--setframerate" ]]; then
+	setFramerate $2
+else
+    echo -e "Available Options : --screen --screen-na --screen-desktop --area --area-na --area-desktop --setframerate"
+fi
+
+exit 0

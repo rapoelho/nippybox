@@ -17,7 +17,7 @@
     "modules": [
         {
             "type": "custom",
-            "format": "Olá,"
+            "format": "Hello,"
         },
 
         {
@@ -31,43 +31,43 @@
         
         {
             "type": "os",
-            "key": "Distribuição",
+            "key": "OS",
             "keyColor": "yellow"
         },
         {
             "type": "kernel",
-            "key": " ├ Kernel",
+            "key": " ├   KNL",
             "keyColor": "yellow"
         },
         {
             "type": "packages",
-            "key": " ├ Pacotes",
+            "key": " ├ 󰏗  PKG",
             "keyColor": "yellow"
         },
         {
             "type": "shell",
-            "key": " └ Shell",
+            "key": " └ 󱆃  SHL",
             "keyColor": "yellow"
         },
         
         {
-            "type": "wm",
-            "key": "Ambiente Gráfico",
+            "type": "de",
+            "key": "DESKTOP ",
             "keyColor": "blue"
         },
         {
             "type": "wmtheme",
-            "key": " ├ Tema",
+            "key": " ├   THM",
             "keyColor": "blue"
         },
         {
             "type": "icons",
-            "key": " ├ Ícones",
+            "key": " ├ 󱌝  ICO",
             "keyColor": "blue"
         },
         {
             "type": "terminal",
-            "key": " └ Terminal",
+            "key": " └   TML",
             "keyColor": "blue"
         },
         {
@@ -78,55 +78,55 @@
         
         {
             "type": "cpu",
-            "key": " ├ CPU",
+            "key": " ├   CPU",
             "keyColor": "green"
         },
 
         {
             "type": "gpu",
-            "key": " ├ GPU",
+            "key": " ├ 󰡁  GPU",
             "keyColor": "green"
         },
 
         
         {
             "type": "disk",
-            "key": " ├ Disco",
+            "key": " ├   DSK",
             "keyColor": "green"
         },
         {
             "type": "memory",
-            "key": " ├ RAM",
+            "key": " ├   RAM",
             "keyColor": "green"
         },
         {
             "type": "swap",
-            "key": " ├ Swap",
+            "key": " ├   SWP",
             "keyColor": "green"
         },
         {
             "type": "uptime",
-            "key": " ├ Tempo de Atividade",
+            "key": " ├   UPT",
             "keyColor": "green"
         },
         {
             "type": "display",
-            "key": " └ Monitor",
+            "key": " └ 󰍹  MNT",
             "keyColor": "green"
         },
         {
             "type": "sound",
-            "key": "Som",
+            "key": "SOUND",
             "keyColor": "cyan"
         },
         {
             "type": "player",
-            "key": " ├ Player",
+            "key": " ├ 󰥠  PLY",
             "keyColor": "cyan"
         },
         {
             "type": "media",
-            "key": " └ Mídia",
+            "key": " └   MED",
             "keyColor": "cyan"
         },
         "break",

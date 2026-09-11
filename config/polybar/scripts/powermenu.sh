@@ -5,7 +5,7 @@
 ## Github  : @adi1090x
 ## Twitter : @adi1090x
 
-dir="~/.config/rofi"
+dir="~/.config/polybar/colorblocks/scripts/rofi"
 uptime=$(uptime -p | sed -e 's/up //g')
 
 rofi_command="rofi -no-config -theme $dir/powermenu.rasi"

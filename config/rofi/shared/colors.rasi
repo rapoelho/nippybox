@@ -1,8 +1,10 @@
+@import							 "catppuccin-mocha.rasi"
+
 * {
-    background:     #150b04;
-    background-alt: #cdcfcf;
-    foreground:     #cdcfcf;
-    selected:       #847D86;
-    active:         #9F9F9E;
-    urgent:         #847D86;
+    background:     @base;
+    background-alt: @crust;
+    foreground:     @text;
+    selected:       #f5e0dc;
+    active:         #d20f39;
+    urgent:         #f5e0dc;
 }

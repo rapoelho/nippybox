@@ -30,57 +30,54 @@
     <animateIconify>yes</animateIconify>
     <!-- Active Window Font -->
     <font place="ActiveWindow">
-      <name>sans</name>
-      <size>9</size>
-      <weight>bold</weight>
-      <slant>normal</slant>
+      <name>Luxi Sans [bh]</name>
+      <size>8</size>
+      <weight>Normal</weight>
+      <slant>Normal</slant>
     </font>
     <!-- Inactive Window Font -->
     <font place="InactiveWindow">
-      <name>sans</name>
-      <size>9</size>
-      <weight>bold</weight>
-      <slant>normal</slant>
+      <name>Luxi Sans [BH ]</name>
+      <size>8</size>
+      <weight>Normal</weight>
+      <slant>Normal</slant>
     </font>
     <!-- Menu Header Font -->
     <font place="MenuHeader">
-      <name>sans</name>
-      <size>9</size>
-      <weight>bold</weight>
-      <slant>normal</slant>
+      <name>Luxi Sans [BH ]</name>
+      <size>8</size>
+      <weight>Bold</weight>
+      <slant>Normal</slant>
     </font>
     <!-- Menu Item Font -->
     <font place="MenuItem">
-      <name>sans</name>
-      <size>9</size>
-      <weight>normal</weight>
-      <slant>normal</slant>
+      <name>Luxi Sans [BH ]</name>
+      <size>8</size>
+      <weight>Normal</weight>
+      <slant>Normal</slant>
     </font>
     <!-- Active OSD Font -->
     <font place="ActiveOnScreenDisplay">
-      <name>sans</name>
-      <size>9</size>
-      <weight>bold</weight>
-      <slant>normal</slant>
+      <name>Luxi Sans [BH ]</name>
+      <size>8</size>
+      <weight>Normal</weight>
+      <slant>Normal</slant>
     </font>
     <!-- Inactive OSD Font -->
     <font place="InactiveOnScreenDisplay">
-      <name>sans</name>
-      <size>9</size>
-      <weight>bold</weight>
-      <slant>normal</slant>
+      <name>Luxi Sans [BH ]</name>
+      <size>8</size>
+      <weight>Normal</weight>
+      <slant>Normal</slant>
     </font>
   </theme>
   <!-- Workspace -->
   <desktops>
-    <number>3</number>
+    <number>2</number>
     <firstdesk>1</firstdesk>
     <names>
       <name>D1</name>
       <name>D2</name>
-      <name>D3</name>
-      <name>D4</name>
-      <name>D5</name>
     </names>
     <popupTime>875</popupTime>
   </desktops>
@@ -96,10 +93,10 @@
   </resize>
   <!-- Margin -->
   <margins>
-    <top>40</top>
-    <bottom>10</bottom>
-    <left>10</left>
-    <right>10</right>
+    <top>10</top>
+    <bottom>50</bottom>
+    <left>8</left>
+    <right>8</right>
   </margins>
   <!-- Dock -->
   <dock>
@@ -115,20 +112,605 @@
     <moveButton>Middle</moveButton>
   </dock>
   <!-- ################################ Keybindings ################################ -->
-  <keyboard><chainQuitKey>C-g</chainQuitKey><!-- ######## Global Actions ######## --><!-- Action :  Root Menu--><keybind key="W-space"><action name="ShowMenu"><menu>root-menu</menu></action></keybind><!-- Action : Window Menu--><keybind key="A-space"><action name="ShowMenu"><menu>client-menu</menu></action></keybind><!-- Action :  Running Applications on All Desktops --><keybind key="A-S-space"><action name="ShowMenu"><menu>client-list-combined-menu</menu></action></keybind><!-- Action : Alternate Window on all Desktops --><keybind key="W-Tab"><action name="NextWindow"><dialog>list</dialog><bar>no</bar><raise>yes</raise><allDesktops>yes</allDesktops><panels>no</panels><desktop>no</desktop><linear>no</linear><interactive>yes</interactive><finalactions><action name="Focus"/><action name="Raise"/><action name="Unshade"/></finalactions></action></keybind><!-- Action : Alternate Window on all Desktops (Inverse) --><keybind key="W-S-Tab"><action name="PreviousWindow"><dialog>list</dialog><bar>no</bar><raise>yes</raise><allDesktops>yes</allDesktops><panels>no</panels><desktop>no</desktop><linear>no</linear><interactive>yes</interactive><finalactions><action name="Focus"/><action name="Raise"/><action name="Unshade"/></finalactions></action></keybind><!-- Action : Alternate Window on Desktop--><keybind key="A-Tab"><action name="NextWindow"><dialog>list</dialog><bar>no</bar><raise>yes</raise><allDesktops>no</allDesktops><panels>no</panels><desktop>no</desktop><linear>no</linear><interactive>yes</interactive><finalactions><action name="Focus"/><action name="Raise"/><action name="Unshade"/></finalactions></action></keybind><!-- Action : Alternate Window on Desktop (Inverse) --><keybind key="A-S-Tab"><action name="NextWindow"><dialog>list</dialog><bar>no</bar><raise>yes</raise><allDesktops>no</allDesktops><panels>no</panels><desktop>no</desktop><linear>no</linear><interactive>yes</interactive><finalactions><action name="Focus"/><action name="Raise"/><action name="Unshade"/></finalactions></action></keybind><!-- Action : Go To Desktop (Next) --><keybind key="C-A-Right"><action name="GoToDesktop"><to>next</to><wrap>yes</wrap></action></keybind><!-- Action : Go To Desktop (Previous) --><keybind key="C-A-Left"><action name="GoToDesktop"><to>previous</to><wrap>yes</wrap></action></keybind><!-- Action : Go To Desktop 01 --><keybind key="W-1"><action name="GoToDesktop"><to>1</to></action></keybind><!-- Action : Go To Desktop 02 --><keybind key="W-2"><action name="GoToDesktop"><to>2</to></action></keybind><!-- Action : Go To Desktop 03 --><keybind key="W-3"><action name="GoToDesktop"><to>3</to></action></keybind><!-- Action : Go To Desktop 04 --><keybind key="W-4"><action name="GoToDesktop"><to>4</to></action></keybind><!-- Action : Go To Desktop 05 --><keybind key="W-5"><action name="GoToDesktop"><to>5</to></action></keybind><!-- Action : Add/Remove Desktop --><keybind key="W-equal"><action name="AddDesktop"><where>last</where></action><action name="Execute"><command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Added New Desktop" </command></action></keybind><keybind key="W-minus"><action name="RemoveDesktop"><where>last</where></action><action name="Execute"><command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Removed Last Desktop"</command></action></keybind><!-- Action : Show Desktop --><keybind key="W-d"><action name="ToggleShowDesktop"/></keybind><!-- Action : Session --><keybind key="C-S-R"><action name="Execute"><command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Configuration Reloaded!"</command></action><action name="Reconfigure"/></keybind><keybind key="C-S-BackSpace"><action name="Restart"/></keybind><keybind key="C-A-Delete"><action name="Exit"><prompt>yes</prompt></action></keybind><!-- ######## Window Actions ######## --><!-- Action : SendToDesktop --><keybind key="W-S-Right"><action name="SendToDesktop"><to>next</to><wrap>yes</wrap><follow>yes</follow></action></keybind><keybind key="W-S-Left"><action name="SendToDesktop"><to>previous</to><wrap>yes</wrap><follow>yes</follow></action></keybind><keybind key="S-W-1"><action name="SendToDesktop"><desktop>1</desktop></action></keybind><keybind key="S-W-2"><action name="SendToDesktop"><desktop>2</desktop></action></keybind><keybind key="S-W-3"><action name="SendToDesktop"><desktop>3</desktop></action></keybind><keybind key="S-W-4"><action name="SendToDesktop"><desktop>4</desktop></action></keybind><keybind key="S-W-5"><action name="SendToDesktop"><desktop>5</desktop></action></keybind><!-- Action : MoveRelative --><keybind key="W-A-Up"><action name="MoveRelative"><x>0</x><y>-20</y></action></keybind><keybind key="W-A-Down"><action name="MoveRelative"><x>0</x><y>20</y></action></keybind><keybind key="W-A-Left"><action name="MoveRelative"><x>-20</x><y>0</y></action></keybind><keybind key="W-A-Right"><action name="MoveRelative"><x>20</x><y>0</y></action></keybind><!-- Action : ResizeRelative --><keybind key="W-C-Right"><action name="ResizeRelative"><right>20</right></action></keybind><keybind key="W-C-Left"><action name="ResizeRelative"><right>-20</right></action></keybind><keybind key="W-C-Down"><action name="ResizeRelative"><bottom>20</bottom></action></keybind><keybind key="W-C-Up"><action name="ResizeRelative"><bottom>-20</bottom></action></keybind><!-- Action: Interactive Move/Resize --><keybind key="W-A-m"><action name="Execute"><command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Begin Interactive Moving"</command></action><action name="Move"/></keybind><keybind key="W-A-r"><action name="Execute"><command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Begin Interactive Resizing"</command></action><action name="Resize"/></keybind><!-- Window Tiling: Snap feature --><keybind key="W-Left"><action name="UnmaximizeFull"/><action name="MaximizeVert"/><action name="MoveResizeTo"><width>50%</width></action><action name="MoveToEdgeWest"/></keybind><keybind key="W-Right"><action name="UnmaximizeFull"/><action name="MaximizeVert"/><action name="MoveResizeTo"><width>50%</width></action><action name="MoveToEdgeEast"/></keybind><keybind key="W-Up"><action name="MaximizeFull"/></keybind><keybind key="W-Down"><action name="UnmaximizeFull"/><action name="MoveResizeTo"><width>60%</width><height>80%</height></action><action name="MoveToCenter"/></keybind><keybind key="W-S-Up"><action name="UnmaximizeFull"/><action name="Maximize"><direction>horizontal</direction></action><action name="MoveResizeTo"><height>50%</height></action><action name="MoveToEdgeNorth"/></keybind><keybind key="W-S-Down"><action name="UnmaximizeFull"/><action name="Maximize"><direction>horizontal</direction></action><action name="MoveResizeTo"><height>50%</height></action><action name="MoveToEdgeSouth"/></keybind><!-- Action: Close Window --><keybind key="W-c"><action name="Close"/></keybind><keybind key="W-q"><action name="Close"/></keybind><keybind key="A-F4"><action name="Close"/></keybind><!-- Action: Minimize Window --><keybind key="A-F5"><action name="Iconify"/></keybind><keybind key="W-Next"><action name="Iconify"/></keybind><!-- Action: Maximize Window --><keybind key="A-F6"><action name="ToggleMaximize"/></keybind><keybind key="W-Pior"><action name="ToggleMaximize"/></keybind><!-- Action: Shade Window --><keybind key="A-F7"><action name="ToggleShade"/><action name="Execute"><command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Toggled Shade"</command></action></keybind><!-- Action: On/Off Window Decoration --><keybind key="A-F8"><action name="ToggleDecorations"/><action name="Execute"><command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Toggled Decorations"</command></action></keybind><!-- Action: On/Off Window on All Desktops --><keybind key="A-F9"><action name="ToggleOmnipresent"/><action name="Execute"><command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Toggled Omnipresent"</command></action></keybind><!-- Action: On/Off Fullscreen --><keybind key="A-F10"><action name="ToggleFullscreen"/></keybind><!-- Action: On/Off Window Always on Top --><keybind key="A-F11"><action name="ToggleAlwaysOnTop"/><action name="Execute"><command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Toggled Always-On-Top"</command></action></keybind><!-- Action: On/Off Window Always on Bottom --><keybind key="A-F12"><action name="ToggleAlwaysOnBottom"/><action name="Execute"><command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Toggled Always-On-Bottom"</command></action></keybind><!-- ######## Actions: Execute ######## --><!-- Screenshot Keys --><keybind key="Print"><action name="Execute"><command>nippy-shot --now</command></action></keybind><keybind key="A-Print"><action name="Execute"><command>nippy-shot --in5</command></action></keybind><keybind key="S-Print"><action name="Execute"><command>nippy-shot --in10</command></action></keybind><keybind key="C-Print"><action name="Execute"><command>nippy-shot --win</command></action></keybind><keybind key="W-Print"><action name="Execute"><command>nippy-shot --area</command></action></keybind><!-- Brightness Control --><keybind key="XF86MonBrightnessUp"><action name="Execute"><command>nippy-keys bright --inc</command></action></keybind><keybind key="XF86MonBrightnessDown"><action name="Execute"><command>nippy-keys bright --dec</command></action></keybind><!-- Volume --><keybind key="XF86AudioRaiseVolume"><action name="Execute"><command>nippy-keys audio --inc</command></action></keybind><keybind key="XF86AudioLowerVolume"><action name="Execute"><command>nippy-keys audio --dec</command></action></keybind><keybind key="XF86AudioMute"><action name="Execute"><command>nippy-keys audio --toggle</command></action></keybind><keybind key="XF86AudioMicMute"><action name="Execute"><command>nippy-keys audio --toggle-mic</command></action></keybind><!-- Media Controls --><keybind key="XF86AudioStop"><action name="Execute"><command>nippy-keys media --stop</command></action></keybind><keybind key="XF86AudioPlay"><action name="Execute"><command>nippy-keys media --play-pause</command></action></keybind><keybind key="XF86AudioPrev"><action name="Execute"><command>nippy-keys media --prev</command></action></keybind><keybind key="XF86AudioNext"><action name="Execute"><command>nippy-keys media --next</command></action></keybind><!-- ################################ Launch Applications ################################ --><!-- Apps --><keybind key="W-T"><action name="Execute"><command>alacritty</command></action></keybind><keybind key="S-W-t"><action name="Execute"><command>xfce4-terminal</command></action></keybind><keybind key="W-f"><action name="Execute"><command>thunar</command></action></keybind><keybind key="W-w"><action name="Execute"><command>exo-open --launch WebBrowser</command></action></keybind><keybind key="W-e"><action name="Execute"><command>geany</command></action></keybind><!-- Rofi --><keybind key="W-A"><action name="Execute"><command>rofi-launcher</command></action></keybind><keybind key="A-F1"><action name="Execute"><command>rofi-launcher</command></action></keybind><keybind key="W-n"><action name="Execute"><command>rofi-wifi</command></action></keybind><keybind key="W-v"><action name="Execute"><command>nippy-clippy rofi</command></action></keybind><keybind key="W-S-e"><action name="Execute"><command>rofi-emoji</command></action></keybind><keybind key="W-S-w"><action name="Execute"><command>rofi-wal</command></action></keybind><!--  <keybind key="W-b">
-    <action name="Execute">
-      <command>rofi-bluetooth</command>
-    </action>
-  </keybind>--><keybind key="W-m"><action name="Execute"><command>rofi-music</command></action></keybind><keybind key="W-x"><action name="Execute"><command>rofi-powermenu</command></action></keybind><keybind key="W-s"><action name="Execute"><command>rofi-screenshot</command></action></keybind><keybind key="A-F2"><action name="Execute"><command>rofi-launcher run</command></action></keybind><keybind key="W-r"><action name="Execute"><command>rofi-launcher run</command></action></keybind><keybind key="W-F12"><action name="Execute"><command>nippy-roar</command></action></keybind><!-- CLI Apps --><!-- Misc --><keybind key="W-l"><action name="Execute"><command>betterlockscreen --lock</command></action></keybind>
-    /
-    <keybind key="W-F11"><action name="Execute"><command>rofi-launcher keys</command></action></keybind>
-
-  <!--<keybind key="C-A-m">
+  <keyboard>
+    <chainQuitKey>C-g</chainQuitKey>
+    <!-- ######## Global Actions ######## -->
+    <!-- Action :  Root Menu-->
+    <keybind key="W-space">
+      <action name="ShowMenu">
+        <menu>root-menu</menu>
+      </action>
+    </keybind>
+    <!-- Action : Window Menu-->
+    <keybind key="A-space">
+      <action name="ShowMenu">
+        <menu>client-menu</menu>
+      </action>
+    </keybind>
+    <!-- Action :  Running Applications on All Desktops -->
+    <keybind key="A-S-space">
+      <action name="ShowMenu">
+        <menu>client-list-combined-menu</menu>
+      </action>
+    </keybind>
+    <!-- Action :  Apps Menu-->
+    <keybind key="C-A-space">
+      <action name="ShowMenu">
+        <menu>app-menu</menu>
+      </action>
+    </keybind>
+    <!-- Action : Alternate Window on all Desktops -->
+    <keybind key="W-Tab">
+      <action name="NextWindow">
+        <dialog>list</dialog>
+        <bar>no</bar>
+        <raise>yes</raise>
+        <allDesktops>yes</allDesktops>
+        <panels>no</panels>
+        <desktop>no</desktop>
+        <linear>no</linear>
+        <interactive>yes</interactive>
+        <finalactions>
+          <action name="Focus"/>
+          <action name="Raise"/>
+          <action name="Unshade"/>
+        </finalactions>
+      </action>
+    </keybind>
+    <!-- Action : Alternate Window on all Desktops (Inverse) -->
+    <keybind key="W-S-Tab">
+      <action name="PreviousWindow">
+        <dialog>list</dialog>
+        <bar>no</bar>
+        <raise>yes</raise>
+        <allDesktops>yes</allDesktops>
+        <panels>no</panels>
+        <desktop>no</desktop>
+        <linear>no</linear>
+        <interactive>yes</interactive>
+        <finalactions>
+          <action name="Focus"/>
+          <action name="Raise"/>
+          <action name="Unshade"/>
+        </finalactions>
+      </action>
+    </keybind>
+    <!-- Action : Alternate Window on Desktop-->
+    <keybind key="A-Tab">
+      <action name="NextWindow">
+        <dialog>list</dialog>
+        <bar>no</bar>
+        <raise>yes</raise>
+        <allDesktops>no</allDesktops>
+        <panels>no</panels>
+        <desktop>no</desktop>
+        <linear>no</linear>
+        <interactive>yes</interactive>
+        <finalactions>
+          <action name="Focus"/>
+          <action name="Raise"/>
+          <action name="Unshade"/>
+        </finalactions>
+      </action>
+    </keybind>
+    <!-- Action : Alternate Window on Desktop (Inverse) -->
+    <keybind key="A-S-Tab">
+      <action name="PreviousWindow">
+        <dialog>list</dialog>
+        <bar>no</bar>
+        <raise>yes</raise>
+        <allDesktops>no</allDesktops>
+        <panels>no</panels>
+        <desktop>no</desktop>
+        <linear>no</linear>
+        <interactive>yes</interactive>
+        <finalactions>
+          <action name="Focus"/>
+          <action name="Raise"/>
+          <action name="Unshade"/>
+        </finalactions>
+      </action>
+    </keybind>
+    <!-- Action : Go To Desktop (Next) -->
+    <keybind key="C-A-Right">
+      <action name="GoToDesktop">
+        <to>next</to>
+        <wrap>yes</wrap>
+      </action>
+    </keybind>
+    <!-- Action : Go To Desktop (Previous) -->
+    <keybind key="C-A-Left">
+      <action name="GoToDesktop">
+        <to>previous</to>
+        <wrap>yes</wrap>
+      </action>
+    </keybind>
+    <!-- Action : Go To Desktop 01 -->
+    <keybind key="W-1">
+      <action name="GoToDesktop">
+        <to>1</to>
+      </action>
+    </keybind>
+    <!-- Action : Go To Desktop 02 -->
+    <keybind key="W-2">
+      <action name="GoToDesktop">
+        <to>2</to>
+      </action>
+    </keybind>
+    <!-- Action : Go To Desktop 03 -->
+    <keybind key="W-3">
+      <action name="GoToDesktop">
+        <to>3</to>
+      </action>
+    </keybind>
+    <!-- Action : Go To Desktop 04 -->
+    <keybind key="W-4">
+      <action name="GoToDesktop">
+        <to>4</to>
+      </action>
+    </keybind>
+    <!-- Action : Go To Desktop 05 -->
+    <keybind key="W-5">
+      <action name="GoToDesktop">
+        <to>5</to>
+      </action>
+    </keybind>
+    <!-- Action : Add/Remove Desktop -->
+    <keybind key="W-equal">
+      <action name="AddDesktop">
+        <where>last</where>
+      </action>
+      <action name="Execute">
+        <command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Added New Desktop" </command>
+      </action>
+    </keybind>
+    <keybind key="W-minus">
+      <action name="RemoveDesktop">
+        <where>last</where>
+      </action>
+      <action name="Execute">
+        <command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Removed Last Desktop"</command>
+      </action>
+    </keybind>
+    <!-- Action : Show Desktop -->
+    <keybind key="W-d">
+      <action name="ToggleShowDesktop"/>
+    </keybind>
+    <!-- Action : Session -->
+    <keybind key="C-S-R">
+      <action name="Execute">
+        <command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Configuration Reloaded!"</command>
+      </action>
+      <action name="Reconfigure"/>
+    </keybind>
+    <keybind key="C-S-BackSpace">
+      <action name="Restart"/>
+    </keybind>
+    <keybind key="C-A-Delete">
+      <action name="Exit">
+        <prompt>yes</prompt>
+      </action>
+    </keybind>
+    <!-- ######## Window Actions ######## -->
+    <!-- Action : SendToDesktop -->
+    <keybind key="W-S-Right">
+      <action name="SendToDesktop">
+        <to>next</to>
+        <wrap>yes</wrap>
+        <follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="W-S-Left">
+      <action name="SendToDesktop">
+        <to>previous</to>
+        <wrap>yes</wrap>
+        <follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="S-W-1">
+      <action name="SendToDesktop">
+        <desktop>1</desktop>
+      </action>
+    </keybind>
+    <keybind key="S-W-2">
+      <action name="SendToDesktop">
+        <desktop>2</desktop>
+      </action>
+    </keybind>
+    <keybind key="S-W-3">
+      <action name="SendToDesktop">
+        <desktop>3</desktop>
+      </action>
+    </keybind>
+    <keybind key="S-W-4">
+      <action name="SendToDesktop">
+        <desktop>4</desktop>
+      </action>
+    </keybind>
+    <keybind key="S-W-5">
+      <action name="SendToDesktop">
+        <desktop>5</desktop>
+      </action>
+    </keybind>
+    <!-- Action : MoveRelative -->
+    <keybind key="W-A-Up">
+      <action name="MoveRelative">
+        <x>0</x>
+        <y>-20</y>
+      </action>
+    </keybind>
+    <keybind key="W-A-Down">
+      <action name="MoveRelative">
+        <x>0</x>
+        <y>20</y>
+      </action>
+    </keybind>
+    <keybind key="W-A-Left">
+      <action name="MoveRelative">
+        <x>-20</x>
+        <y>0</y>
+      </action>
+    </keybind>
+    <keybind key="W-A-Right">
+      <action name="MoveRelative">
+        <x>20</x>
+        <y>0</y>
+      </action>
+    </keybind>
+    <!-- Action : ResizeRelative -->
+    <keybind key="W-C-Right">
+      <action name="ResizeRelative">
+        <right>20</right>
+      </action>
+    </keybind>
+    <keybind key="W-C-Left">
+      <action name="ResizeRelative">
+        <right>-20</right>
+      </action>
+    </keybind>
+    <keybind key="W-C-Down">
+      <action name="ResizeRelative">
+        <bottom>20</bottom>
+      </action>
+    </keybind>
+    <keybind key="W-C-Up">
+      <action name="ResizeRelative">
+        <bottom>-20</bottom>
+      </action>
+    </keybind>
+    <!-- Action: Interactive Move/Resize -->
+    <keybind key="W-A-m">
+      <action name="Execute">
+        <command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Begin Interactive Moving"</command>
+      </action>
+      <action name="Move"/>
+    </keybind>
+    <keybind key="W-A-r">
+      <action name="Execute">
+        <command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Begin Interactive Resizing"</command>
+      </action>
+      <action name="Resize"/>
+    </keybind>
+    <!-- Window Tiling: Snap feature -->
+    <keybind key="W-Left">
+      <action name="UnmaximizeFull"/>
+      <action name="MaximizeVert"/>
+      <action name="MoveResizeTo">
+        <width>50%</width>
+      </action>
+      <action name="MoveToEdgeWest"/>
+    </keybind>
+    <keybind key="W-Right">
+      <action name="UnmaximizeFull"/>
+      <action name="MaximizeVert"/>
+      <action name="MoveResizeTo">
+        <width>50%</width>
+      </action>
+      <action name="MoveToEdgeEast"/>
+    </keybind>
+    <keybind key="W-Up">
+      <action name="MaximizeFull"/>
+    </keybind>
+    <keybind key="W-Down">
+      <action name="UnmaximizeFull"/>
+      <action name="MoveResizeTo">
+        <width>60%</width>
+        <height>80%</height>
+      </action>
+      <action name="MoveToCenter"/>
+    </keybind>
+    <keybind key="W-S-Up">
+      <action name="UnmaximizeFull"/>
+      <action name="Maximize">
+        <direction>horizontal</direction>
+      </action>
+      <action name="MoveResizeTo">
+        <height>50%</height>
+      </action>
+      <action name="MoveToEdgeNorth"/>
+    </keybind>
+    <keybind key="W-S-Down">
+      <action name="UnmaximizeFull"/>
+      <action name="Maximize">
+        <direction>horizontal</direction>
+      </action>
+      <action name="MoveResizeTo">
+        <height>50%</height>
+      </action>
+      <action name="MoveToEdgeSouth"/>
+    </keybind>
+    <!-- Action: Close Window -->
+    <keybind key="W-c">
+      <action name="Close"/>
+    </keybind>
+    <keybind key="W-q">
+      <action name="Close"/>
+    </keybind>
+    <keybind key="A-F4">
+      <action name="Close"/>
+    </keybind>
+    <!-- Action: Minimize Window -->
+    <keybind key="A-F5">
+      <action name="Iconify"/>
+    </keybind>
+    <keybind key="W-Next">
+      <action name="Iconify"/>
+    </keybind>
+    <!-- Action: Maximize Window -->
+    <keybind key="A-F6">
+      <action name="ToggleMaximize"/>
+    </keybind>
+    <keybind key="W-Pior">
+      <action name="ToggleMaximize"/>
+    </keybind>
+    <!-- Action: Shade Window -->
+    <keybind key="A-F7">
+      <action name="ToggleShade"/>
+      <action name="Execute">
+        <command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Toggled Shade"</command>
+      </action>
+    </keybind>
+    <!-- Action: On/Off Window Decoration -->
+    <keybind key="A-F8">
+      <action name="ToggleDecorations"/>
+      <action name="Execute">
+        <command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Toggled Decorations"</command>
+      </action>
+    </keybind>
+    <!-- Action: On/Off Window on All Desktops -->
+    <keybind key="A-F9">
+      <action name="ToggleOmnipresent"/>
+      <action name="Execute">
+        <command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Toggled Omnipresent"</command>
+      </action>
+    </keybind>
+    <!-- Action: On/Off Fullscreen -->
+    <keybind key="A-F10">
+      <action name="ToggleFullscreen"/>
+    </keybind>
+    <!-- Action: On/Off Window Always on Top -->
+    <keybind key="A-F11">
+      <action name="ToggleAlwaysOnTop"/>
+      <action name="Execute">
+        <command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Toggled Always-On-Top"</command>
+      </action>
+    </keybind>
+    <!-- Action: On/Off Window Always on Bottom -->
+    <keybind key="A-F12">
+      <action name="ToggleAlwaysOnBottom"/>
+      <action name="Execute">
+        <command>dunstify -u low -h string:x-dunst-stack-tag:obaction "Toggled Always-On-Bottom"</command>
+      </action>
+    </keybind>
+    <!-- ######## Actions: Execute ######## -->
+    <!-- Screenshot Keys -->
+    <keybind key="Print">
+      <action name="Execute">
+        <command>nippy-shot --now</command>
+      </action>
+    </keybind>
+    <keybind key="A-Print">
+      <action name="Execute">
+        <command>nippy-shot --in5</command>
+      </action>
+    </keybind>
+    <keybind key="S-Print">
+      <action name="Execute">
+        <command>nippy-shot --in10</command>
+      </action>
+    </keybind>
+    <keybind key="C-Print">
+      <action name="Execute">
+        <command>nippy-shot --win</command>
+      </action>
+    </keybind>
+    <keybind key="W-Print">
+      <action name="Execute">
+        <command>nippy-shot --area</command>
+      </action>
+    </keybind>
+    <!-- Brightness Control -->
+    <keybind key="XF86MonBrightnessUp">
+      <action name="Execute">
+        <command>nippy-keys bright --inc</command>
+      </action>
+    </keybind>
+    <keybind key="XF86MonBrightnessDown">
+      <action name="Execute">
+        <command>nippy-keys bright --dec</command>
+      </action>
+    </keybind>
+    <!-- Volume -->
+    <keybind key="XF86AudioRaiseVolume">
+      <action name="Execute">
+        <command>nippy-keys audio --inc</command>
+      </action>
+    </keybind>
+    <keybind key="XF86AudioLowerVolume">
+      <action name="Execute">
+        <command>nippy-keys audio --dec</command>
+      </action>
+    </keybind>
+    <keybind key="XF86AudioMute">
+      <action name="Execute">
+        <command>nippy-keys audio --toggle</command>
+      </action>
+    </keybind>
+    <keybind key="XF86AudioMicMute">
+      <action name="Execute">
+        <command>nippy-keys audio --toggle-mic</command>
+      </action>
+    </keybind>
+    <!-- Media Controls -->
+    <keybind key="XF86AudioStop">
+      <action name="Execute">
+        <command>nippy-keys media --stop</command>
+      </action>
+    </keybind>
+    <keybind key="XF86AudioPlay">
+      <action name="Execute">
+        <command>nippy-keys media --play-pause</command>
+      </action>
+    </keybind>
+    <keybind key="XF86AudioPrev">
+      <action name="Execute">
+        <command>nippy-keys media --prev</command>
+      </action>
+    </keybind>
+    <keybind key="XF86AudioNext">
+      <action name="Execute">
+        <command>nippy-keys media --next</command>
+      </action>
+    </keybind>
+    <!-- ################################ Launch Applications ################################ -->
+    <!-- Apps -->
+    <keybind key="W-T">
+      <action name="Execute">
+        <command>alacritty</command>
+      </action>
+    </keybind>
+    <keybind key="S-W-t">
+      <action name="Execute">
+        <command>xfce4-terminal</command>
+      </action>
+    </keybind>
+    <keybind key="W-f">
+      <action name="Execute">
+        <command>thunar</command>
+      </action>
+    </keybind>
+    <keybind key="W-w">
+      <action name="Execute">
+        <command>exo-open --launch WebBrowser</command>
+      </action>
+    </keybind>
+    <keybind key="W-e">
+      <action name="Execute">
+        <command>geany</command>
+      </action>
+    </keybind>
+    <!-- Rofi -->
+    <keybind key="W-A">
+      <action name="Execute">
+        <command>rofi-launcher</command>
+      </action>
+    </keybind>
+    <keybind key="W-F1">
+      <action name="Execute">
+        <command>rofi-launcher</command>
+      </action>
+    </keybind>
+    <keybind key="A-F1">
+      <action name="Execute">
+        <command>rofi-launcher</command>
+      </action>
+    </keybind>
+    <keybind key="W-n">
+      <action name="Execute">
+        <command>rofi-wifi</command>
+      </action>
+    </keybind>
+    <keybind key="W-v">
+      <action name="Execute">
+        <command>nippy-clippy</command>
+      </action>
+    </keybind>
+    <keybind key="W-S-e">
+      <action name="Execute">
+        <command>rofi-emoji</command>
+      </action>
+    </keybind>
+    <keybind key="W-b">
+      <action name="Execute">
+        <command>rofi-bluetooth</command>
+      </action>
+    </keybind>
+    <keybind key="W-m">
+      <action name="Execute">
+        <command>rofi-music</command>
+      </action>
+    </keybind>
+    <keybind key="W-x">
+      <action name="Execute">
+        <command>rofi-powermenu</command>
+      </action>
+    </keybind>
+    <keybind key="W-s">
+      <action name="Execute">
+        <command>rofi-screenshot</command>
+      </action>
+    </keybind>
+    <keybind key="A-F2">
+      <action name="Execute">
+        <command>rofi-launcher run</command>
+      </action>
+    </keybind>
+    <keybind key="W-F2">
+      <action name="Execute">
+        <command>rofi-launcher run</command>
+      </action>
+    </keybind>
+    <keybind key="W-S-w">
+      <action name="Execute">
+        <command>rofi-wal</command>
+      </action>
+    </keybind>
+    <keybind key="W-r">
+      <action name="Execute">
+        <command>rofi-launcher run</command>
+      </action>
+    </keybind>
+    <keybind key="W-F11">
+      <action name="Execute">
+        <command>rofi-launcher keys</command>
+      </action>
+    </keybind>
+    <keybind key="W-F12">
+      <action name="Execute">
+        <command>nippy-roar</command>
+      </action>
+    </keybind>
+    <!-- Misc -->
+    <keybind key="W-l">
+      <action name="Execute">
+        <command>betterlockscreen --lock</command>
+      </action>
+    </keybind>
+    <keybind key="W-p">
+      <action name="Execute">
+        <command>nippy-colorpicker rofi</command>
+      </action>
+    </keybind>
+    <!--<keybind key="C-A-m">
     <action name="Execute">
       <command>ob-music</command>
     </action>
   </keybind>-->
-    <keybind key="W-Escape"><action name="Execute"><command>xkill</command></action></keybind>
+    <keybind key="W-Escape">
+      <action name="Execute">
+        <command>xkill</command>
+      </action>
+    </keybind>
   </keyboard>
   <mouse>
     <dragThreshold>1</dragThreshold>
@@ -491,6 +1073,13 @@
     <applicationIcons>no</applicationIcons>
   </menu>
   <applications>
+	  
+	<application class="Polybar">
+		<decor>no</decor>
+		<shade>no</shade>
+		<skip_pager>yes</skip_pager>
+		<skip_taskbar>yes</skip_taskbar>
+	</application>
     <!-- Nitrogen Configs -->
     <application title="Nitrogen">
       <position force="yes">

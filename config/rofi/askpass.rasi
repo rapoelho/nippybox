@@ -1,0 +1,44 @@
+/**
+ * Author : Aditya Shakya (adi1090x)
+ * Github : @adi1090x
+ * 
+ * Modified : Guilherme Oliveira (rapoelho)
+ * Github 	: @rapoelho
+ * 
+ * nippyRofi Theme - Ask Pass
+ **/
+
+
+/*****----- Global Properties -----*****/
+@import                          "shared/common.rasi"
+@import                          "shared/colors.rasi"
+
+
+
+/*****----- Main Window -----*****/
+window {
+    width:                       400px;
+}
+
+/*****----- Main Box -----*****/
+mainbox {
+    children:                    [ "listbox" ];
+}
+
+imagebox {
+    children:                    [ "dummy", "message"];
+}
+
+listbox {
+    children:                    [ "inputbar" ];
+}
+
+
+/*****----- Inputbar -----*****/
+textbox-prompt-colon {
+    str:                         "󰟵";
+}
+
+entry {
+    placeholder:                 "Password";
+}

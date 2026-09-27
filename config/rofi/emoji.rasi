@@ -5,18 +5,16 @@
  * Modified : Guilherme Oliveira (rapoelho)
  * Github 	: @rapoelho
  * 
- * nippyRofi Theme : Clippy
+ * nippyRofi Theme : Emoji
  **/
+
 
 /*****----- Global Properties -----*****/
 @import                          "shared/common.rasi"
 @import                          "shared/colors.rasi"
-
 
 /*****----- Main Box -----*****/
 
 imagebox {
     children:                    [ "inputbar", "dummy", "prompt"];
 }
-
-

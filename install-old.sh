@@ -3,19 +3,12 @@ set -e
 
 LightDMBack="Autumn Countryside Landscape.png"
 log="/tmp/log.txt"
-xsettingsDaemon="$HOME/.config/xsettings-clean.txt"
-xsettingsConfig="$HOME/.xsettingsd"
 
 if [[ "$1" == "chroot" ]]; then
 	echo "## Chroot: YES"
 	svFolder="/etc/runit/runsvdir/default"
 else
 	svFolder="/var/service"
-fi
-
-OndeEstou=$(dirname "$0")
-if [[ "$OndeEstou" == "." ]]; then
-    OndeEstou=$(pwd)
 fi
 
 verificarDiretorios () {
@@ -25,8 +18,6 @@ verificarDiretorios () {
 	mkdir -p $HOME/.config
 	mkdir -p $HOME/.themes/nippybox
 	mkdir -p $HOME/.local/lib/python3.14/site-packages
-	
-	echo "Diretorios=OK" > "$log"
 }
 
 instalarPacotes () {
@@ -46,7 +37,7 @@ instalarPacotes () {
 	
 	echo -e "\n## Instalando dependências dos Scripts"
 	sleep 2
-	sudo xbps-install -y pywal maim xclip slop ffmpeg playerctl brightnessctl xcolor
+	sudo xbps-install -y maim xclip slop ffmpeg playerctl brightnessctl xcolor
 	
 	echo -e "\n ## Instalando Aplicativos Básicos..."
 	sleep 2
@@ -198,27 +189,6 @@ finalizarConfig () {
 	echo "## Gerando as pastas do Usuário"
 	xdg-user-dirs-update
 
-	cat << EOF > "$xsettingsDaemon"
-Gtk/CursorThemeName=Adwaita
-Gtk/FontName=$FONTE_SISTEMA
-Gtk/IconThemeName=$TEMA_ICONES
-Gtk/ThemeName=$TEMA_GTK
-Net/IconThemeName=$TEMA_ICONES
-Net/ThemeName=$TEMA_GTK
-EOF
-
-
-	
-	echo "## Aplicando Temas"
-	#~ xfconf-query -c xsettings -p /Net/ThemeName -s "Dracula"
-	#~ xfconf-query -c xsettings -p /Net/IconThemeName -s "Papirus-Dark"
-	
-	echo "## Aplicando Fonte"
-	#~ xfconf-query -c xsettings -p /Gtk/FontName -s "Cantarell 9"
-
-	echo "## Arrumando os Aplicativos dos Menus..."
-	sudo sed -i '$a\Hidden=true' /usr/share/applications/rofi*
-	sudo sed -i '$a\Hidden=true' /usr/share/applications/picom.desktop
 
 	echo "## Gerando o .xinitrc..."
 	{
@@ -232,25 +202,6 @@ EOF
 	} > $HOME/.xinitrc
 
 	echo "ConfigsFinais=OK" >> "$log"
-}
-
-temaPlank () {
-	{
-		cat <<EOF
-		
-[PlankDrawingTheme]
-TopRoundness=6
-BottomRoundness=6
-LineWidth=0
-OuterStrokeColor=41;;41;;41;;255
-FillStartColor=0;;0;;0;;217
-FillEndColor=0;;0;;0;;217
-InnerStrokeColor=255;;255;;255;;255
-
-EOF
-	} > $HOME/.local/share/plank/themes/Nippy/hover.theme
-
-	echo "TemaPlank=OK" >> "$log"
 }
 
 creditos () {

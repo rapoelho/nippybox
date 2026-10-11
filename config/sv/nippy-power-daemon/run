@@ -1,0 +1,9 @@
+#!/bin/sh
+exec 2>&1
+
+export PATH="$HOME/.local/bin:$PATH"
+
+export DISPLAY=:0
+export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+
+exec nippy-power-daemon

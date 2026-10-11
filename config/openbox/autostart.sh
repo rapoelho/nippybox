@@ -28,6 +28,3 @@ conky &
 
 ## Clippy
 nippy-clippy-daemon &
-
-## Zentile
-zentile &

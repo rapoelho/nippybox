@@ -93,8 +93,8 @@
   </resize>
   <!-- Margin -->
   <margins>
-    <top>10</top>
-    <bottom>50</bottom>
+    <top>8</top>
+    <bottom>43</bottom>
     <left>8</left>
     <right>8</right>
   </margins>

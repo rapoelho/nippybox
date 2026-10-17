@@ -4,6 +4,9 @@
 ## Modificado por Rapoelho, para incluir a opção desse Script ser um Pipemenu e para uso no Nippybox
 ## Script to take screenshots on Archcraft.
 
+DIR="$HOME/.config/rofi"
+RASI="$DIR/screenshot.rasi"
+
 # pipemenu
 pipemenu () {
 	MENUS_LIBDIR="$HOME/.config/openbox/"

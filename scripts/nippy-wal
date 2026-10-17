@@ -1,17 +1,15 @@
 #!/usr/bin/env bash
 
-## Script to execute commands by thunar context menu and actions
-
 ## Set wallpaper (Colorizer)
 wall_colorizer () {
+	set_wallpaper "$@"
 	nippy-colorizer "$@"
 }
 
 ## Set wallpaper ------------------------------
-set_wallpaper() {
-	for head in {0..10}; do
-		nitrogen --head="$head" --save --set-zoom-fill "$@" &>/dev/null
-	done
+set_wallpaper() {	
+	feh --bg-fill "$@"
+	magick "$@" -resize 1000x1000^ -define crop:smart-crop=true -crop 800x800+0+0 +repage -quality 00 "$HOME/.config/rofi/shared/wallpaper.png"
 }
 ## Set lockscreen -----------------------------
 set_lockscreen() {
@@ -26,4 +24,7 @@ elif [[ "$1" == '--wallpaper' ]]; then
 	set_wallpaper "$2"
 elif [[ "$1" == '--lockscreen' ]]; then
 	set_lockscreen "$2"
+elif [[ "$1" == '--restore' ]]; then
+	source $HOME/.config/nippybox/config
+	feh --bg-scale "$wallpaper"
 fi

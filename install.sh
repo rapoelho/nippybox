@@ -16,6 +16,8 @@ checkFolders () {
 	mkdir -p $HOME/.config
 	mkdir -p $HOME/.themes/nippybox
 	mkdir -p $HOME/.local/lib/python3.14/site-packages/
+	mkdir -p $HOME/.config/sv/nippy-power-daemon
+	mkdir -p $HOME/.var/service
 }
 
 updateSys () {

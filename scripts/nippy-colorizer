@@ -1,467 +1,203 @@
-#!/bin/bash
+#!/usr/bin/env python3
+import sys
+import os
+import re
+from PIL import Image
 
-### Variáveis da Polybar
-polybarFile="colors.ini"
-polybarFolder="$HOME/.config/polybar"
-
-### Variáveis do Dunst
-dunstFile="dunstrc"
-dusntFolder="$HOME/.config/dunst"
-
-### Variáveis do Rofi
-rofiFile="colors.rasi"
-rofiFoler="$HOME/.config/rofi/shared"
-
-### Tema Openbox
-obThemeFile="themerc"
-obThemeName="nippybox"
-obThemeFolder="$HOME/.themes/$obThemeName/openbox-3"
-
-### Tema da Plank
-plankFile="dock.theme"
-plankTheme="Nippy"
-plankFolder="$HOME/.local/share/plank/themes/$plankTheme"
-
-file=$HOME/.Xresources
-
-## Obtendo as Cores do Tema
-fill_color(){
-	get_colors(){
-		grep "color$1 *:" $file | awk -F\# '{print $2}' | head -1
-	}
-	get_colors_bg=`grep "background *:" $file | awk -F\# '{print $2}' | head -1`
-	get_colors_fg=`grep "foreground *:" $file | awk -F\# '{print $2}' | head -1`
+## Lista dos arquivos de configurações
+CONFIG_FILES = {
+    "polybar": {
+        "path": os.path.expanduser("~/.config/polybar/colors.ini"),
+        "separator": " = "
+    },
+    "rofi": {
+        "path": os.path.expanduser("~/.config/rofi/shared/colors.rasi"),
+        "separator": ": "
+    },
+    "dunst": {
+        "path": os.path.expanduser("~/.config/dunst/dunstrc"),
+        "separator": " = "
+    },
+    "openbox": {
+        "path": os.path.expanduser("~/.themes/nippybox/openbox-3/themerc"),
+        "separator": " "
+    }
 }
 
-## Função para Colorir a Polybar
-poly_color(){
-	{
-	cat <<EOF
-[color]
-
-background = #${get_colors_bg}
-foreground = #${get_colors_fg}
-foreground-alt = #$(get_colors 8)
-module-fg = #F5F5F5
-primary = #$(get_colors 1)
-secondary = #$(get_colors 2)
-alternate = #$(get_colors 3)
-
-EOF
-	} > $polybarFile
-	mv $polybarFile $polybarFolder
+# 1. Banco de dados completo do Catppuccin (As 14 cores nas 4 variantes)
+CATPPUCCIN = {
+    "rosewater": {"F": "f2d5cf", "MC": "f4dbd6", "M": "f5e0dc", "L": "dc8a91"},
+    "flamingo":  {"F": "eebebe", "MC": "f0c1e3", "M": "f2cdcd", "L": "ddb6f2"},
+    "pink":      {"F": "f4b8e4", "MC": "f5bde6", "M": "f5c2e7", "L": "ea76cb"},
+    "maroon":    {"F": "ea999c", "MC": "ee99a0", "M": "eba0ac", "L": "e64553"},
+    "red":       {"F": "e78284", "MC": "ed8796", "M": "f38ba8", "L": "d20f39"},
+    "peach":     {"F": "ef9f76", "MC": "f5a97f", "M": "fab387", "L": "fe640b"},
+    "yellow":    {"F": "f9e2af", "MC": "f9e2af", "M": "f9e2af", "L": "df8e1d"},
+    "green":     {"F": "a6d189", "MC": "a6da95", "M": "a6e3a1", "L": "40a02b"},
+    "teal":      {"F": "81c8be", "MC": "8bd5ca", "M": "94e2d5", "L": "179299"},
+    "sky":       {"F": "89dceb", "MC": "89dceb", "M": "89dceb", "L": "04a5e5"},
+    "sapphire":  {"F": "74c7ec", "MC": "74c7ec", "M": "74c7ec", "L": "209fb5"},
+    "blue":      {"F": "8caaee", "MC": "8aadf4", "M": "89b4fa", "L": "1e66f5"},
+    "lavender":  {"F": "b4befe", "MC": "b4befe", "M": "b4befe", "L": "7287fd"},
+    "mauve":     {"F": "ca9ee6", "MC": "c6a0f6", "M": "cba6f7", "L": "8839ef"}
 }
 
-## Função para Colorir o dunst
-dunst_color(){
-	{
-	cat <<EOF
+# 2. Ordem Sequencial do Círculo Cromático para cálculo automático de análogas
+ORDEM_CROMATICA = [
+    "red", "maroon", "peach", "yellow", "green", "teal", 
+    "sky", "sapphire", "blue", "lavender", "mauve", "pink", 
+    "flamingo", "rosewater"
+]
 
-[global]
-
-## Display
-monitor = 0
-follow = mouse
-width = 300
-height = (0, 300)
-origin = top-right
-offset = (10, 40)
-indicate_hidden = yes
-notification_limit = 0
-gap_size = 12
-padding = 15
-horizontal_padding = 15
-frame_width = 2
-sort = yes
-
-## Progress Bar
-progress_bar = true
-progress_bar_height = 80
-progress_bar_frame_width = 0
-progress_bar_min_width = 300
-progress_bar_max_width = 300
-
-## Text
-font = Iosevka Custom 9
-markup = full
-format = "<small>%a</small>\n<big><b>%s</b></big>\n%b"
-#format = %s\n%b
-alignment = left
-vertical_alignment = center
-show_age_threshold = 60
-hide_duplicate_count = false
-text_icon_padding = 0
-
-## Icon
-icon_position = left
-min_icon_size = 32
-max_icon_size = 48
-
-## Line and Separator
-line_height = 2
-separator_height = 2
-separator_color = frame
-
-## Misc
-corner_radius = 10
-scale = 0
-idle_threshold = 120
-transparency = 0
-ellipsize = middle
-ignore_newline = no
-stack_duplicates = true
-show_indicators = yes
-enable_recursive_icon_lookup = true
-sticky_history = yes
-history_length = 20
-browser = /usr/bin/xdg-open
-always_run_script = true
-
-## Mouse
-mouse_left_click = close_current
-mouse_middle_click = do_action, close_current
-mouse_right_click = close_all
-
-## Advanced
-title = Dunst
-class = Dunst
-
-[urgency_low]
-timeout = 2
-background = "#${get_colors_bg}"
-foreground = "#${get_colors_fg}"
-frame_color = "#$(get_colors 6)"
-
-[urgency_normal]
-timeout = 5
-background = "#${get_colors_bg}"
-foreground = "#${get_colors_fg}"
-frame_color = "#$(get_colors 1)"
-
-[urgency_critical]
-timeout = 0
-background = "#${get_colors_bg}"
-foreground = "#$(get_colors 8)"
-frame_color = "#$(get_colors 4)"
-
-EOF
-	} > $dunstFile
-	mv $dunstFile $dusntFolder
-	pkill dunst && dunst & > /dev/null
+# Coordenadas CIELAB oficiais para detecção humana precisa
+ACCENTS_LAB = {
+    "rosewater": (65.18, 24.08, 9.08),    "flamingo": (77.12, 13.91, 5.27),
+    "pink": (82.02, 23.34, -13.43),       "maroon": (62.83, 28.27, 10.15),
+    "red": (66.42, 44.75, -3.62),         "peach": (77.67, 20.89, 34.02),
+    "yellow": (89.47, -2.87, 30.29),      "green": (84.58, -23.41, 17.20),
+    "teal": (85.74, -20.12, -4.31),       "sky": (82.72, -16.14, -17.16),
+    "sapphire": (75.05, -12.35, -26.11),  "blue": (72.93, -0.92, -41.74),
+    "lavender": (76.43, 5.18, -30.22),    "mauve": (73.66, 21.14, -22.39)
 }
 
-hex2rgb () {
-		hex=$1
-		first="${hex:0:1}"
-
-		if [ "#" = "$first" ]; then
-			hex="${hex:1:6}"
-		fi
-
-		hex_r="${hex:0:2}"
-		hex_g="${hex:2:2}"
-		hex_b="${hex:4:2}"
-
-		rgba_r=`echo $((0x${hex_r}))`
-		rgba_g=`echo $((0x${hex_g}))`
-		rgba_b=`echo $((0x${hex_b}))`
-
-		echo "$rgba_r;;$rgba_g;;$rgba_b;;255"
-}
-
-## Função para Colorir a Plank
-plank_color() {
-	
-	plankBadge="$(hex2rgb $(get_colors 1))"
-	plankBG="$(hex2rgb ${get_colors_bg})"
-	
-		{
-	cat <<EOF
-[PlankTheme]
-TopRoundness=8
-BottomRoundness=0
-LineWidth=2
-OuterStrokeColor=${plankBadge}
-FillStartColor=${plankBG}
-FillEndColor=${plankBG}
-InnerStrokeColor=${plankBG}
-
-[PlankDockTheme]
-HorizPadding=0
-TopPadding=-7
-BottomPadding=1
-ItemPadding=3
-IndicatorSize=5
-IconShadowSize=1
-UrgentBounceHeight=1.6666666666666667
-LaunchBounceHeight=0.625
-FadeOpacity=1
-ClickTime=300
-UrgentBounceTime=600
-LaunchBounceTime=600
-ActiveTime=300
-SlideTime=300
-FadeTime=250
-HideTime=150
-GlowSize=30
-GlowTime=10000
-GlowPulseTime=2000
-UrgentHueShift=0
-ItemMoveTime=450
-CascadeHide=true
-BadgeColor=${plankBadge}
-EOF
-} > $plankFile
-mv $plankFile $plankFolder
-
-}
-
-## Função para Colorir o Rofi
-rofi_color() {
-	{
-	cat <<EOF
-* {
-    background:     #${get_colors_bg};
-    background-alt: #$(get_colors 7);
-    foreground:     #${get_colors_fg};
-    selected:       #$(get_colors 4);
-    active:         #$(get_colors 6);
-    urgent:         #$(get_colors 12);
-}
-EOF
-} > $rofiFile
-mv $rofiFile $rofiFoler
-}
- 
-obTheme(){
-	{
-	cat <<EOF
-
-# Menu
-menu.border.width: 10
-menu.overlap.x:    -20
-menu.overlap.y:    -20
-
-menu.border.color:              #${get_colors_bg}
-menu.separator.color:           #${get_colors_bg}
-
-menu.title.bg:                  flat solid
-menu.title.bg.color:            #${get_colors_bg}
-menu.title.text.color:          #$(get_colors 1)
-menu.title.text.justify:        Center
-
-menu.items.bg:                  flat solid
-menu.items.bg.color:            #${get_colors_bg}
-
-menu.items.text.color:          #$(get_colors 7)
-menu.items.disabled.text.color: #$(get_colors 1)
-
-menu.items.active.bg:           flat solid
-menu.items.active.bg.color:     #$(get_colors 4)
-menu.items.active.text.color:   #${get_colors_fg}
-
-# Active window
-window.active.border.color:                           #$(get_colors 1)
-
-window.active.title.bg:                               solid flat
-window.active.title.bg.color:                         #1e1f29
-window.active.title.separator.color:                  #1e1f29
-window.active.text.justify:                           center
-
-window.active.label.bg:                               parentrelative
-window.active.label.text.color:                       #$(get_colors 7)
-
-window.active.handle.bg:                              flat solid
-window.active.handle.bg.color:                        #$(get_colors 4)
-
-window.active.grip.bg:                                flat solid
-window.active.grip.bg.color:                          #$(get_colors 4)
-
-window.active.button.unpressed.bg:                    parentrelative
-window.active.button.unpressed.bg.color:              #${get_colors_bg}
-
-window.active.button.iconify.unpressed.image.color:   #$(get_colors 7)
-window.active.button.iconify.pressed.image.color:     #$(get_colors 3)
-window.active.button.iconify.hover.image.color:       #$(get_colors 4)
-
-window.active.button.max.unpressed.image.color:       #$(get_colors 7)
-window.active.button.max.pressed.image.color:         #$(get_colors 2)
-window.active.button.max.hover.image.color:           #$(get_colors 4)
-
-window.active.button.close.unpressed.image.color:     #$(get_colors 7)
-window.active.button.close.pressed.image.color:       #$(get_colors 1)
-window.active.button.close.hover.image.color:         #$(get_colors 4)
-
-window.active.button.shade.unpressed.image.color:     #$(get_colors 7)
-window.active.button.shade.pressed.image.color:       #$(get_colors 5)
-window.active.button.shade.hover.image.color:         #$(get_colors 4)
-
-window.active.button.desk.unpressed.image.color:      #$(get_colors 7)
-window.active.button.desk.pressed.image.color:        #$(get_colors 6)
-window.active.button.desk.hover.image.color:          #$(get_colors 4)
-
-window.active.button.pressed.bg:                      parentrelative
-window.active.button.pressed.bg.color:                #$(get_colors 4)
-
-window.active.button.disabled.bg:                     parentrelative
-window.active.button.disabled.bg.color:               #${get_colors_bg}
-window.active.button.disabled.image.color:            #${get_colors_bg}
-
-window.active.button.toggled.bg:                      parentrelative
-window.active.button.toggled.image.color:             #$(get_colors 5)
-
-window.active.button.toggled.pressed.bg:              parentrelative
-window.active.button.toggled.pressed.image.color:     #$(get_colors 5)
-
-# Inactive window
-window.inactive.border.color:                         #$(get_colors 4)
-
-window.inactive.title.bg:                             flat solid
-window.inactive.title.bg.color:                       #1e1f29
-window.inactive.title.separator.color:                #1e1f29
-window.inactive.text.justify:                         center
-
-window.inactive.label.bg:                             parentrelative
-window.inactive.label.text.color:                     #$(get_colors 8)
-
-window.inactive.handle.bg:                            flat solid
-window.inactive.handle.bg.color:                      #$(get_colors 5)
-
-window.inactive.grip.bg:                              flat solid
-window.inactive.grip.bg.color:                        #$(get_colors 5)
-
-window.inactive.button.unpressed.bg:                  parentrelative
-window.inactive.button.unpressed.bg.color:            #${get_colors_bg}
-
-window.inactive.button.iconify.unpressed.image.color: #$(get_colors 8)
-window.inactive.button.iconify.pressed.image.color:   #$(get_colors 3)
-window.inactive.button.iconify.hover.image.color:     #$(get_colors 15)
-
-window.inactive.button.max.unpressed.image.color:     #$(get_colors 8)
-window.inactive.button.max.pressed.image.color:       #$(get_colors 2)
-window.inactive.button.max.hover.image.color:         #$(get_colors 15)
-
-window.inactive.button.close.unpressed.image.color:   #$(get_colors 8)
-window.inactive.button.close.pressed.image.color:     #$(get_colors 1)
-window.inactive.button.close.hover.image.color:       #$(get_colors 15)
-
-window.inactive.button.shade.unpressed.image.color:   #$(get_colors 8)
-window.inactive.button.shade.pressed.image.color:     #$(get_colors 5)
-window.inactive.button.shade.hover.image.color:       #$(get_colors 15)
-
-window.inactive.button.desk.unpressed.image.color:    #$(get_colors 8)
-window.inactive.button.desk.pressed.image.color:      #$(get_colors 6)
-window.inactive.button.desk.hover.image.color:        #$(get_colors 15)
-
-window.inactive.button.pressed.bg:                    flat solid
-window.inactive.button.pressed.bg.color:              #$(get_colors 4)
-
-window.inactive.button.disabled.bg:                   flat solid
-window.inactive.button.disabled.bg.color:             #${get_colors_bg}
-window.inactive.button.disabled.image.color:          #${get_colors_bg}
-
-window.inactive.button.toggled.bg:                    parentrelative
-window.inactive.button.toggled.image.color:           #$(get_colors 4)
-
-window.inactive.button.toggled.pressed.bg:            parentrelative
-window.inactive.button.toggled.pressed.image.color:   #$(get_colors 4)
-
-# OSD
-osd.border.width:                    3
-osd.border.color:                    #${get_colors_bg}
-
-osd.bg:                              flat solid
-osd.bg.color:                        #${get_colors_bg}
-osd.label.bg:                        flat solid
-osd.label.bg.color:                  #${get_colors_bg}
-osd.label.text.color:                #$(get_colors 7)
-
-osd.hilight.bg:                      flat solid
-osd.hilight.bg.color:                #$(get_colors 4)
-
-osd.unhilight.bg:                    flat solid
-osd.unhilight.bg.color:              #$(get_colors 8)
-
-osd.button.unpressed.bg:             flat border
-osd.button.unpressed.bg.color:       #$(get_colors 8)
-osd.button.unpressed.*.border.color: #${get_colors_bg}
-
-osd.button.pressed.bg:               flat border
-osd.button.pressed.bg.color:         #$(get_colors 8)
-osd.button.pressed.*.border.color:   #${get_colors_bg}
-
-osd.button.focused.bg:               flat solid border
-osd.button.focused.bg.color:         #${get_colors_bg}
-osd.button.focused.*.border.color:   #${get_colors_bg}
-
-osd.button.focused.box.color:        #$(get_colors 4)
-
-# Fonts
-window.active.label.text.font:       shadow=n
-window.inactive.label.text.font:     shadow=n
-menu.items.font:                     shadow=n
-menu.title.text.font:                shadow=n
-
-# Everything else
-border.width:                2
-padding.width:               15
-padding.height:              10
-window.handle.width:         0
-window.client.padding.width: 0
-window.label.text.justify:   right
-
-EOF
-	} > $obThemeFile
-	mv $obThemeFile $obThemeFolder
-}
-
-check_theme(){
-	if [[ $(cat $HOME/.config/openbox/rc.xml | grep "nippybox") ]]; then
-		notify-send "Done. now you can try your theme :)"
-		openbox --reconfigure
-	fi
-}
-
-## Verificando a Entrada do Comando
-if [[ -z "$1" ]]; then
-	echo "ERRO: Wallpaper não selecionado"
-else
-	wallpaper="$1"
-fi 
-
-## Exibindo a Saída do Comando
-echo "## Papel de Parede Selcionado: $wallpaper"
-
-## Aplicando e Salvando o Papel de Parede
-echo "## Aplicando Papel de Parede..."
-nitrogen --save --set-zoom-fill "$wallpaper" > /dev/null 2>&1
-
-## Extraindo a paleta de Cores
-echo "## Extraindo Paleta de Cores..."
-wal -q -i "$wallpaper"
-cp ~/.cache/wal/colors.Xresources ~/.Xresources
-
-## Executando as Funções
-cd ~/.local/bin
-fill_color
-
-plank_color
-
-echo "## Colorindo as Notificações"
-dunst_color
-
-echo "## Colorindo a Polybar..."
-poly_color
-
-echo "## Colorindo o Rofi..."
-rofi_color
-
-echo "## Colorindo o Tema Openbox..."
-obTheme
-
-if [[ "$2" == "--no-X11" ]]; then
-	echo "Pronto!"
-else
-	check_theme
-	echo "Pronto!"
-fi
+def rgb_to_lab(r, g, b):
+    """ Converte RGB padrão para o espaço de cor perceptual CIELAB """
+    r_n, g_n, b_n = r / 255.0, g / 255.0, b / 255.0
+    r_n = ((r_n + 0.055) / 1.055) ** 2.4 if r_n > 0.04045 else r_n / 12.92
+    g_n = ((g_n + 0.055) / 1.055) ** 2.4 if g_n > 0.04045 else g_n / 12.92
+    b_n = ((b_n + 0.055) / 1.055) ** 2.4 if b_n > 0.04045 else b_n / 12.92
+
+    X = (r_n * 0.4124 + g_n * 0.3576 + b_n * 0.1805) * 100 / 95.047
+    Y = (r_n * 0.2126 + g_n * 0.7152 + b_n * 0.0722) * 100 / 100.0
+    Z = (r_n * 0.0193 + g_n * 0.1192 + b_n * 0.9505) * 100 / 108.883
+
+    X = X ** (1/3) if X > 0.008856 else (7.787 * X) + (16 / 116)
+    Y = Y ** (1/3) if Y > 0.008856 else (7.787 * Y) + (16 / 116)
+    Z = Z ** (1/3) if Z > 0.008856 else (7.787 * Z) + (16 / 116)
+
+    return (116 * Y) - 16, 500 * (X - Y), 200 * (Y - Z)
+
+def extrair_cor_dominante(img_path):
+    """ Reduz a escala do Wallpaper e extrai a cor RGB predominante """
+    with Image.open(img_path) as img:
+        img = img.resize((100, 100))
+        img_quantized = img.quantize(colors=8)
+        palette = img_quantized.getpalette()
+        return palette[:3]
+
+def encontrar_accent_cielab(rgb):
+    """ Calcula qual Accent Catppuccin está mais próximo baseado na visão humana """
+    w_l, w_a, w_b = rgb_to_lab(*rgb)
+    menor_dist = float('inf')
+    vencedor = "mauve"
+    for name, (c_l, c_a, c_b) in ACCENTS_LAB.items():
+        dist = (w_l - c_l)**2 + (w_a - c_a)**2 + (w_b - c_b)**2
+        if dist < menor_dist:
+            menor_dist = dist
+            vencedor = name
+    return vencedor
+
+def calcular_shades_individuais(accent):
+    """ Encontra as cores vizinhas no círculo cromático e mapeia do shade1 ao shade8 """
+    idx = ORDEM_CROMATICA.index(accent)
+    num_cores = len(ORDEM_CROMATICA)
+    
+    vizinho_esquerda = ORDEM_CROMATICA[(idx - 1) % num_cores]
+    vizinho_direita  = ORDEM_CROMATICA[(idx + 1) % num_cores]
+    
+    return {
+        "1": CATPPUCCIN[vizinho_esquerda]["F"],
+        "2": CATPPUCCIN[vizinho_esquerda]["MC"],
+        "3": CATPPUCCIN[accent]["F"],
+        "4": CATPPUCCIN[accent]["MC"],
+        "5": CATPPUCCIN[accent]["F"], 
+        "6": CATPPUCCIN[accent]["MC"],
+        "7": CATPPUCCIN[accent]["M"], 
+        "8": CATPPUCCIN[vizinho_direita]["L"]  
+    }
+
+def atualizar_arquivos_sistema(shades, vencedor):
+    """ Processa os arquivos dinamicamente via Regex ou substituição pura por Template """
+    # Conversões em minúsculas obrigatórias para compatibilidade com o Openbox
+    sh7 = f"#{shades['7']}".lower()
+    sh1 = f"#{shades['1']}".lower()
+    sh8 = f"#{shades['8']}".lower()
+
+    # Mapeamento de Tags para os arquivos .template externos
+    MAPA_TEMPLATES = {
+        "[BORDER_ACTIVE]":   sh7,
+        "[BORDER_INACTIVE]": sh1,
+        "[MENU_ACTIVE]":     sh7,
+        "[ROFI_SELECTED]":   sh7,
+        "[ROFI_ACTIVE]":     sh8,
+        "[ROFI_URGENT]":     sh7,
+        "[DUNST_CRITICAL_BORDER]":	 sh8
+    }
+
+    for nome_app, info in CONFIG_FILES.items():
+        caminho_real = info["path"]
+        separador = info["separator"]
+        caminho_template = f"{caminho_real}.template"
+
+        # 1. Tratamento para Openbox e Rofi usando o sistema de Templates externos
+        if nome_app in ["openbox", "rofi", "dunst"]:
+            if not os.path.exists(caminho_template):
+                print(f"[!] Arquivo de template necessário não encontrado: {caminho_template}")
+                continue
+            
+            # Lê do template limpo (onde as tags nunca somem)
+            with open(caminho_template, "r") as f:
+                conteudo = f.read()
+            
+            # Substituição textual exata e à prova de quebras de linha
+            for tag, cor_hex in MAPA_TEMPLATES.items():
+                conteudo = conteudo.replace(tag, cor_hex)
+        
+        # 2. Tratamento tradicional em linha para a Polybar (Não precisa de template separado)
+        else:
+            if not os.path.exists(caminho_real):
+                print(f"[!] Arquivo da Polybar não encontrado em: {caminho_real}")
+                continue
+            with open(caminho_real, "r") as f:
+                conteudo = f.read()
+                
+            for num, hex_val in shades.items():
+                # Protege as quebras de linha da Polybar usando negação ([^\n]*)
+                padrao = f"(shade{num}{re.escape(separador)})[^\n]*"
+                conteudo = re.sub(padrao, r"\1" + f"#{hex_val}", conteudo)
+
+        # Escreve o resultado com as cores finais aplicadas de volta no arquivo ativo real
+        with open(caminho_real, "w") as f:
+            f.write(conteudo)
+        print(f"[+] Cores injetadas com sucesso no {nome_app}.")
+
+    # Executa o re-load do Openbox apontando de forma assíncrona para a tela correta do Xorg (:0)
+    restartPolybar = ("killall -9 polybar 2>/dev/null || true; nohup polybar > /dev/null 2>&1 &")
+    restartDunst = ("killall -9 dunst 2>/dev/null || true; nohup dunst > /dev/null 2>&1 &")
+    
+    os.system("openbox --reconfigure")
+    os.system(restartPolybar)
+    os.system(restartDunst)
+    
+    accent = vencedor.capitalize()
+    nome_tema = f"Catppuccin-{accent}-Dark"
+    
+    os.system(f"nippy-settings-set Gtk/ThemeName \"{nome_tema}\"") 
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Uso: ./wal_catppuccin.py /caminho/do/wallpaper.jpg")
+        sys.exit(1)
+        
+    wall_path = sys.argv[1]
+    try:
+        rgb_predominante = extrair_cor_dominante(wall_path)
+        vencedor = encontrar_accent_cielab(rgb_predominante)
+        dicionario_shades = calcular_shades_individuais(vencedor)
+        
+        # Aplica as cores
+        atualizar_arquivos_sistema(dicionario_shades, vencedor)
+                
+        print(f"\n[SUCESSO] Todo o ambiente foi alinhado ao Accent: {vencedor} (#{CATPPUCCIN[vencedor]['M']})")
+    except Exception as e:
+        print(f"Erro ao processar: {e}")

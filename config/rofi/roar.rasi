@@ -1,0 +1,22 @@
+/**
+ * Author : Aditya Shakya (adi1090x)
+ * Github : @adi1090x
+ * 
+ * Modified : Guilherme Oliveira (rapoelho)
+ * Github 	: @rapoelho
+ * 
+ * nippyRofi Theme : Clippy
+ **/
+
+/*****----- Global Properties -----*****/
+@import                          "shared/common.rasi"
+@import                          "shared/colors.rasi"
+
+
+/*****----- Main Box -----*****/
+
+imagebox {
+    children:                    [ "inputbar", "dummy", "prompt"];
+}
+
+

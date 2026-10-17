@@ -12,31 +12,15 @@ prompt="$HOSTNAME (`echo $DESKTOP_SESSION`)"
 mesg="Uptime : `uptime -p | sed -e 's/up //g'`"
 
 # Options
-layout=`cat ${RASI} | grep 'USE_ICON' | cut -d'=' -f2`
-if [[ "$layout" == 'NO' ]]; then
-	option_1=" Lock"
-	option_2=" Logout"
-	option_3=" Suspend"
-	option_4=" Hibernate"
-	option_5=" Reboot"
-	option_6=" Shutdown"
-else
-	option_1=""
-	option_2=""
-	option_3=""
-	option_4=""
-	option_5=""
-	option_6=""
-fi
+option_1=" Lock"
+option_2=" Logout"
+option_3=" Suspend"
+option_4=" Hibernate"
+option_5=" Reboot"
+option_6=" Shutdown"
 
-cnflayout=`cat ${CNFR} | grep 'USE_ICON' | cut -d'=' -f2`
-if [[ "$cnflayout" == 'NO' ]]; then
-	yes=' Yes'
-	no=' No'
-else
-	yes=''
-	no=''
-fi
+yes=' Yes'
+no=' No'
 
 # Rofi CMD
 rofi_cmd() {
@@ -86,11 +70,11 @@ run_cmd() {
 	elif [[ "$1" == '--opt3' ]]; then
 		confirm_run 'pulsemixer --mute' 'betterlockscreen --suspend'
 	elif [[ "$1" == '--opt4' ]]; then
-		confirm_run 'systemctl hibernate'
+		confirm_run 'dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager.Hibernate boolean:true'
 	elif [[ "$1" == '--opt5' ]]; then
-		confirm_run 'systemctl reboot'
+		confirm_run 'dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager.Reboot boolean:true'
 	elif [[ "$1" == '--opt6' ]]; then
-		confirm_run 'systemctl poweroff'
+		confirm_run 'dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager.PowerOff boolean:true'
 	fi
 }
 

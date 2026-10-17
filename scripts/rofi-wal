@@ -14,7 +14,7 @@ rofiMode () {
 }
 
 runRofiMode () {
-	echo -e "$option1\n$option2\n$option3" | rofi -dmenu -theme $confirmRASI
+	echo -e "$option1\n$option2\n$option3" | rofi -dmenu -p "󰸉 Wallpapers" -theme $confirmRASI
 }
 
 
@@ -56,11 +56,12 @@ walList() {
 	done < $wlist
 }
 	
-wallpaper=$(walList | rofi -dmenu -theme $RASI) # Mostra o Rofi para escolher o Wallpaper
+wallpaper=$(walList | rofi -dmenu -p "󰸉 Wallpapers" -theme $RASI) # Mostra o Rofi para escolher o Wallpaper
 walPath=$(cat $wlist | grep $(echo ${wallpaper#[[:space:]]*}))
 
 if [ x"Current" = x"${wallpaper}" ]; then
 	exit
 elif [ -n "${wallpaper}" ]; then	
+	magick "$walPath" -gravity center -crop 16:9 +repage -thumbnail 400x400 -quality 00 "$HOME/.config/rofi/shared/sel-wallpaper.png"
 	selectMode
 fi

@@ -7,30 +7,23 @@ DIR="$HOME/.config/rofi"
 RASI="$DIR/screenshot.rasi"
 
 # Theme Elements
-mesg="Directory :: `xdg-user-dir PICTURES`/Screenshots"
+mesg="Directory: `xdg-user-dir PICTURES`/Screenshots"
 
 # Options
-layout=`cat ${RASI} | grep 'USE_ICON' | cut -d'=' -f2`
-if [[ "$layout" == 'NO' ]]; then
-	option_1=" Capture Desktop"
-	option_2=" Capture Area"
-	option_3=" Capture Window"
-	option_4=" Capture in 5s"
-	option_5=" Capture in 10s"
-else
-	option_1=""
-	option_2=""
-	option_3=""
-	option_4=""
-	option_5=""
-fi
+
+option_1=" Capture Desktop"
+option_2=" Capture Area"
+option_3=" Capture Window"
+option_4=" Capture in 5s"
+option_5=" Capture in 10s"
+
 
 # Rofi CMD
 rofi_cmd() {
 	rofi -dmenu \
 		-mesg "$mesg" \
 		-markup-rows \
-		-theme ${RASI}
+		-theme ${RASI} -p " Screenshot"
 }
 
 # Pass variables to rofi dmenu
@@ -66,7 +59,7 @@ copy_shot () {
 # countdown
 countdown () {
 	for sec in `seq $1 -1 1`; do
-		dunstify -t 1000 -h string:x-dunst-stack-tag:screenshottimer -i /usr/share/archcraft/icons/dunst/timer.png "Taking shot in : $sec"
+		dunstify -t 1000 -h string:x-dunst-stack-tag:screenshottimer "Taking shot in : $sec"
 		sleep 1
 	done
 }

@@ -21,8 +21,8 @@ else
 fi
 
 # Options
-layout=`cat ${RASI} | grep 'USE_ICON' | cut -d'=' -f2`
-if [[ "$layout" == 'NO' ]]; then
+
+
 	option_1=" Previous"
 	if [[ ${status} == *"Playing"* ]]; then
 		option_2=" Pause"
@@ -31,16 +31,7 @@ if [[ "$layout" == 'NO' ]]; then
 	fi
 	option_3=" Stop"
 	option_4=" Next"
-else
-	option_1=""
-	if [[ ${status} == *"Playing"* ]]; then
-		option_2=""
-	else
-		option_2=""
-	fi
-	option_3=""
-	option_4=""
-fi
+
 
 # Toggle Actions
 active=''

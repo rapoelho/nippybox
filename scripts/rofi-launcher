@@ -17,7 +17,7 @@ run () {
 	RASI="$DIR/runner.rasi"
 	rofi \
     -show run \
-	-theme ${RASI}
+	-theme ${RASI} -p " Run"
 }
 
 window () {

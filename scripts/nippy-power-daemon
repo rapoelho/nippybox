@@ -155,7 +155,7 @@ async def battery_monitor_client ():
 				if now_status == 1:
 					status_battery = "AC Plugged"
 					charging ()
-				elif now_status == 3:
+				elif now_status == 3 or percent_battery == 100:
 					status_battery = "Battery Full"
 					full_battery ()
 				else:

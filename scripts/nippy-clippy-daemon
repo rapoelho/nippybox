@@ -1,0 +1,54 @@
+#! /bin/env python3
+
+import time
+import pyperclip
+import os
+
+ARQUIVO_HISTORICO = os.path.expanduser("~/.clipboard.history")
+
+def ler_historico():
+    if not os.path.exists(ARQUIVO_HISTORICO):
+        return []
+    with open(ARQUIVO_HISTORICO, "r", encoding="utf-8") as f:
+        return [linha.strip() for list_item in f.readlines() if (linha := list_item.strip())]
+
+def salvar_no_historico(texto):
+    # .strip() remove espaços, tabs e quebras de linha do início e do fim do bloco
+    texto_limpo = texto.strip()
+    
+    # REGRA DE SEGURANÇA: Se o bloco for vazio (apenas espaços/tabs), ignora completamente
+    if not texto_limpo:
+        return
+
+    # Escapa as quebras de linha reais para manter a sua compatibilidade com o Bash
+    texto_escapado = texto_limpo.replace("\n", "\\n")
+    
+    historico = ler_historico()
+    
+    # Remove duplicadas antigas para trazer o item mais recente ao topo
+    if texto_escapado in historico:
+        historico.remove(texto_escapado)
+        
+    historico.insert(0, texto_escapado)
+    # ~ historico = historico[:50]  # Limite de segurança de 50 itens
+    
+    with open(ARQUIVO_HISTORICO, "w", encoding="utf-8") as f:
+        for item in historico:
+            f.write(item + "\n")
+
+def monitorar_clipboard():
+    print("Gerenciador iniciado. Ignorando entradas vazias e espaços em branco...")
+    ultimo_texto = ""
+    while True:
+        try:
+            texto_atual = pyperclip.paste()
+            if texto_atual and texto_atual != ultimo_texto:
+                salvar_no_historico(texto_atual)
+                ultimo_texto = texto_atual
+        except Exception:
+            # Proteção contra erros de leitura momentâneos do clipboard no X11/Wayland
+            pass
+        time.sleep(1)
+
+if __name__ == "__main__":
+    monitorar_clipboard()

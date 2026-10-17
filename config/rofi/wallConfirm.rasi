@@ -15,6 +15,7 @@
 
 /*****----- Main Box -----*****/
 imagebox {
+    background-image:            url("~/.config/rofi/shared/sel-wallpaper.png", height);
     children:					 [ ];
 }
 

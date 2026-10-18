@@ -173,6 +173,11 @@ finalConfigs () {
 		sudo usermod -aG lpadmin,video,audio "$u"
 	done
 	
+	echo "## Criando o Script do ZZZ"
+	sudo mkdir -p /etc/zzz.d/suspend
+	chmod +x misc/betterlockscreen
+	cp misc/betterlockscreen /etc/zzz.d/suspend
+	
 	echo "## Copiando Wallpapers para /usr/share/backgrounds..."
 	sudo cp -r backgrounds /usr/share
 

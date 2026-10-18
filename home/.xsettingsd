@@ -1,2 +1,6 @@
+Gtk/FontName "Cantarell 9"
+Gtk/IconTheme "Papirus-Icon-Theme"
+Gtk/IconThemeName "Papirus-Dark"
 Gtk/ThemeName "Catppuccin-Yellow-Dark"
+Net/IconThemeName "Papirus-Dark"
 Net/ThemeName "Catppuccin-Yellow-Dark"

@@ -51,12 +51,22 @@
         },
         
         {
-            "type": "de",
+            "type": "wm",
             "key": "DESKTOP ",
             "keyColor": "blue"
         },
         {
+            "type": "lm",
+            "key": " ├   LMG",
+            "keyColor": "blue"
+        },
+        {
             "type": "wmtheme",
+            "key": " ├   THM",
+            "keyColor": "blue"
+        },
+        {
+            "type": "theme",
             "key": " ├   THM",
             "keyColor": "blue"
         },
@@ -84,7 +94,7 @@
 
         {
             "type": "gpu",
-            "key": " ├ 󰡁  GPU",
+            "key": " ├ 󰘚  GPU",
             "keyColor": "green"
         },
 
@@ -110,6 +120,12 @@
             "keyColor": "green"
         },
         {
+            "type": "battery",
+            "key": " ├   BAT",
+            "format": "{capacity} [{cycle-count} Cycles] {status} ",
+            "keyColor": "green"
+        },
+        {
             "type": "display",
             "key": " └ 󰍹  MNT",
             "keyColor": "green"
@@ -117,16 +133,6 @@
         {
             "type": "sound",
             "key": "SOUND",
-            "keyColor": "cyan"
-        },
-        {
-            "type": "player",
-            "key": " ├ 󰥠  PLY",
-            "keyColor": "cyan"
-        },
-        {
-            "type": "media",
-            "key": " └   MED",
             "keyColor": "cyan"
         },
         "break",

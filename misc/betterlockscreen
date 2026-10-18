@@ -1,0 +1,28 @@
+#!/bin/env sh
+
+# 1. Identifica de forma robusta o usuário da sessão X ativa
+X_USER=$(who | awk '{print $1}' | head -n1)
+if [ -z "$X_USER" ]; then
+    X_USER=$(ps aux | grep -v grep | grep -E "Xorg|Xwayland" | awk '{print $1}' | head -n1)
+fi
+
+# Aborta o script se não houver um usuário ativo na interface gráfica
+[ -z "$X_USER" ] && exit 0
+
+# 2. Configura o ambiente de exibição do X11
+export DISPLAY=:0
+
+# 3. Faz a busca dinâmica do XAUTHORITY gerado pelo LightDM
+XAUTH_PROCESS=$(ps aux | grep -v grep | grep -E "Xorg|Xwayland" | grep -oE "\-auth [^ ]+" | awk '{print $2}' | head -n1)
+
+if [ -n "$XAUTH_PROCESS" ] && [ -f "$XAUTH_PROCESS" ]; then
+    export XAUTHORITY="$XAUTH_PROCESS"
+elif [ -f "/home/$X_USER/.Xauthority" ]; then
+    export XAUTHORITY="/home/$X_USER/.Xauthority"
+fi
+
+# 4. Executa o bloqueio de tela de forma segura no contexto do usuário
+su -c "betterlockscreen --lock" "$X_USER"
+
+# Pequeno delay de segurança para o lock renderizar antes do hardware apagar
+sleep 1

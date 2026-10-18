@@ -16,8 +16,6 @@ checkFolders () {
 	mkdir -p $HOME/.config
 	mkdir -p $HOME/.themes/nippybox
 	mkdir -p $HOME/.local/lib/python3.14/site-packages/
-	mkdir -p $HOME/.config/sv/nippy-power-daemon
-	mkdir -p $HOME/.var/service
 }
 
 updateSys () {
@@ -31,13 +29,15 @@ installXlibre () {
 	sudo mkdir -p /etc/xbps.d
 	printf "repository=https://github.com/xlibre-void/xlibre/releases/latest/download/" | sudo tee /etc/xbps.d/99-repository-xlibre.conf
 	sudo xbps-install -Sy
-	sudo xbps-install -Su xlibre
+	sudo xbps-install -Syu xlibre
 }
 
 installDesktop () {
 	echo -e "\n## Instalando Pacotes Básicos do Nippybox..."
 	sleep 2
-	sudo xbps-install -y openbox obconf polybar rofi libnotify dunst feh picom xcompmgr xdg-user-dirs acpi pulsemixer bash-completion bluez-utils redshift curl qt5ct qt6ct noto-fonts-emoji void-repo-nonfree obmenu-generator polkit mate-polkit elogind psmisc cantarell-fonts xsettingsd xmodmap xinput setxkbmap xkeyboard-config
+	sudo xbps-install -y openbox obconf polybar rofi libnotify dunst feh picom xcompmgr xdg-user-dirs acpi pulsemixer bash-completion redshift curl qt5ct qt6ct noto-fonts-emoji void-repo-nonfree obmenu-generator polkit mate-polkit elogind psmisc cantarell-fonts xsettingsd xmodmap xinput setxkbmap xkeyboard-config
+
+	sudo xbps-install -Syu
 
 	echo -e "\n## Instalando dependências dos Scripts"
 	sleep 2
@@ -45,7 +45,7 @@ installDesktop () {
 
 	echo -e "\n ## Instalando Pipewire..."
 	sleep 2
-	sudo xbps-install -y pipewire wireplumber pipewire-pulse alsa-utils
+	sudo xbps-install -y pipewire wireplumber alsa-utils
 }
 
 installApps () {
@@ -63,7 +63,7 @@ installApps () {
 	
 	echo -e "\n## Instalando Codecs Multimídia..."
 	sleep 2
-	sudo xbps-install -y gst-plugins-ugly1 gst-plugins-good1 gst-plugins-base1 gst-plugins-bad1 gst-libav gstreamer 
+	sudo xbps-install -y gst-plugins-ugly1 gst-plugins-good1 gst-plugins-base1 gst-plugins-bad1 gst-libav 
 
 	echo -e "\n## Instalando Suporte a Sistemas de Arquivos..."
 	sleep 2
@@ -71,7 +71,7 @@ installApps () {
 	
 	echo -e "\n## Instalando o Suporte a Impressoras..."
 	sleep 2
-	sudo xbps-install -y cups sane libpoppler system-config-printer cups-pk-helper cups-filters foomatic-db foomatic-db-nonfree gutenprint
+	sudo xbps-install -y cups sane libpoppler system-config-printer cups-pk-helper cups-filters foomatic-db  gutenprint
 
 	echo -e "\n## Instalando o Suporte a Descompactadores de Arquivos..."
 	sleep 2
@@ -83,11 +83,12 @@ installApps () {
 
 	echo "## Instalando Outros Pacotes Extras..."
 	sleep 2
-	sudo xbps-install -y libgepub libgsf libopenraw poppler-glib freetype2 papirus-icon-theme starship
+	sudo xbps-install -y libgepub libgsf libopenraw poppler-glib papirus-icon-theme starship
 
 	echo "## Instalando Módulos do Python..."
 	sleep 2
 	sudo xbps-install -y python3-pip python3-pipx python3-Pillow python3-xlib python3-psutil
+	sudo pipx ensurepath --global
 	sudo pipx install pyperclip dbus_next --global
 	
 	echo -e "\n## Instalando o LightDM..."
@@ -115,12 +116,15 @@ installFonts () {
 copyConfigs () {
 	echo -e "## Copiando as Configurações..."
 	cp -r config/* $HOME/.config/
-	cp -r home/* $HOME/
-
+	
+	for file in $(ls -A home | grep '^\.'); do
+		cp -r home/$file $HOME/
+	done
+	
 	echo "## Copiando Temas..."
 	cp -r themes/* $HOME/.themes/
-	tar -xzvf themes.tar.gz
-	cp -r themes/Catppuccin* /usr/share/themes
+	unzip themes.zip
+	sudo mv Catppuccin* /usr/share/themes
 
 	echo "## Copiando Scripts..."
 	cp -r scripts/* $HOME/.local/bin/
@@ -170,7 +174,7 @@ finalConfigs () {
 	done
 	
 	echo "## Copiando Wallpapers para /usr/share/backgrounds..."
-	sudo cp -r $OndeEstou/backgrounds /usr/share
+	sudo cp -r backgrounds /usr/share
 
 	echo "## Definindo o Wallpaper do LightDM"
 	sudo cp "/usr/share/backgrounds/$LightDMBack" /usr/share/pixmaps

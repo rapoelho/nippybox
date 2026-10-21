@@ -1,0 +1,159 @@
+#! /bin/env python3
+import asyncio
+import subprocess
+import os
+from dbus_next.aio import MessageBus
+from dbus_next.constants import BusType
+from dbus_next.errors import InterfaceNotFoundError
+
+low_battery = 30.0
+
+percent_battery = 0.0
+status_battery = ""
+powersave_active = False
+
+bright_powersave = "20%"
+bright_battery = "40%"
+bright_ac = "70%"
+
+def get_uptime ():
+	try:
+		with open ('/proc/uptime', 'r') as file:
+			uptime_s = float (file.readline ().split()[0])
+			uptime_h = int (uptime_s // 3600)
+			
+			uptime_d = int (uptime_h // 24)
+			uptime_h = int(uptime_h - (uptime_d * 24))
+			uptime_m = int (( uptime_s % 3600) // 60 )
+			
+			uptime = f"{uptime_d}d {uptime_h}h {uptime_m}m"
+			
+			return uptime
+	except Exception:
+		return "N/A"
+
+def log_event (type, event):	
+	print (f"[{get_uptime()}] [{type.upper()}] {event}")
+	
+def set_bright (bright):
+	log_event ("screen", f"Brightness: {bright}")
+	subprocess.run(["brightnessctl", "set", bright])
+
+def powersave ():
+	global powersave_active
+	
+	log_event ("battery", f"Low Battery: {low_battery}")
+	subprocess.run(["notify-send", "Low Battery!", "Battery is running low!"])
+	log_event ("battery" , "Powersave: ON")
+	powersave_active = True
+	set_bright (bright_powersave)
+	
+def charging ():
+	global powersave_active
+	
+	if powersave_active:
+		log_event ("battery", "Powersave: OFF")
+		powersave_active = False
+		
+	subprocess.run(["notify-send", "Charging...", "Your Power Bridge is charging..."])
+	set_bright (bright_ac)
+	
+def full_battery ():
+	subprocess.run(["notify-send", "Battery Full", "Your Power Bridge is fully charged"])
+	set_bright (bright_ac)
+	
+def on_battery ():
+	subprocess.run(["notify-send", "On Battery", "Running on Power Bridge discharging..."])
+	set_bright (bright_battery)
+
+async def battery_monitor_client ():
+	global powersave_active
+	global status_battery
+	global percent_battery
+
+	upower_dest = 'org.freedesktop.UPower'
+	upower_path = '/org/freedesktop/UPower'
+	upower_prop = 'org.freedesktop.DBus.Properties'
+	upower_device = 'org.freedesktop.UPower.Device'
+	
+	try:
+		system_bus = await MessageBus(bus_type = BusType.SYSTEM).connect ()
+		
+		# Usamos o display_device para monitorar a soma/estado consolidado do Power Bridge
+		battery_path = '/org/freedesktop/UPower/devices/display_device'
+		log_event ("daemon", f"Using Consolidated Device: {battery_path}")
+		
+		bat_intropect = await system_bus.introspect(upower_dest, battery_path)
+		bat_proxy = system_bus.get_proxy_object (upower_dest, battery_path, bat_intropect)
+		
+		try:
+			upower_properties = bat_proxy.get_interface (upower_prop)
+		except InterfaceNotFoundError:
+			upower_properties = bat_proxy.get_interface (upower_device)
+		
+		# Pegando o Estado Inicial
+		try:
+			init_percentage_var = await upower_properties.call_get(upower_device, 'Percentage')
+			percent_battery = float(init_percentage_var.value)
+			
+			init_status_var = await upower_properties.call_get(upower_device, 'State')
+			init_status = int(init_status_var.value)
+			
+			if init_status == 1:
+				status_battery = "Charging - On AC"
+				charging ()
+			elif init_status == 3:
+				status_battery = "Battery Full - On AC"
+				full_battery ()
+			elif init_status == 2 and percent_battery <= low_battery:
+				status_battery = "Discharging - On Battery"
+				powersave ()
+			else:
+				status_battery = "Discharging - On Battery"
+				on_battery ()
+		
+			log_event ("Battery", f"Battery Status: {percent_battery}% ({status_battery})")
+			
+		except Exception as e:
+			print (f"[ERROR Initial State] {e}")
+		
+		# Monitoramento via Eventos D-Bus PropertiesChanged
+		def prop_changed (interface_name, change_prop, invalid_prop):
+			global powersave_active
+			global status_battery
+			global percent_battery
+			
+			if 'Percentage' in change_prop:
+				percent_battery = float(change_prop['Percentage'].value)
+				log_event ("battery", f"Battery Status: {percent_battery}%")
+				
+				if percent_battery <= low_battery and not powersave_active and status_battery != "Charging - On AC":
+					powersave ()
+			
+			if 'State' in change_prop:
+				now_status = int(change_prop['State'].value)
+				
+				if now_status == 1:
+					status_battery = "AC Plugged"
+					charging ()
+				elif now_status == 3 or percent_battery >= 99.0:
+					status_battery = "Battery Full"
+					full_battery ()
+				else:
+					status_battery = "On Battery"
+					
+					if percent_battery <= low_battery:
+						powersave ()
+					else:
+						on_battery ()
+					
+				log_event ("battery", f"Power State Changed: {status_battery}")
+					
+		upower_properties.on_properties_changed(prop_changed)
+		await asyncio.get_running_loop().create_future()
+		
+	except Exception as e:
+		print (f"[ERROR Daemon] {e}")
+
+if __name__ == "__main__":
+	asyncio.run(battery_monitor_client())

@@ -9,6 +9,10 @@ wall_colorizer () {
 ## Set wallpaper ------------------------------
 set_wallpaper() {	
 	feh --bg-fill "$@"
+	
+	dconf write /org/gnome/desktop/background/picture-uri "'file://$@'"
+	dconf write /org/gnome/desktop/background/picture-uri-dark "'file://$@1'"
+
 	magick "$@" -resize 1000x1000^ -define crop:smart-crop=true -crop 800x800+0+0 +repage -quality 00 "$HOME/.config/rofi/shared/wallpaper.png"
 }
 ## Set lockscreen -----------------------------

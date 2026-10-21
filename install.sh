@@ -173,10 +173,10 @@ finalConfigs () {
 		sudo usermod -aG lpadmin,video,audio "$u"
 	done
 	
-	echo "## Criando o Script do ZZZ"
-	sudo mkdir -p /etc/zzz.d/suspend
-	chmod +x misc/betterlockscreen
-	cp misc/betterlockscreen /etc/zzz.d/suspend
+	echo "## Configurando a Suspensão"
+	sudo mkdir -p /etc/elogind/system-sleep/
+	chmod +x misc/betterlockscreen-sleep
+	sudo cp misc/betterlockscreen-sleep /etc/elogind/system-sleep/
 	
 	echo "## Copiando Wallpapers para /usr/share/backgrounds..."
 	sudo cp -r backgrounds /usr/share
@@ -196,17 +196,6 @@ finalConfigs () {
 	
 	echo "## Gerando as pastas do Usuário"
 	xdg-user-dirs-update
-	
-	echo "## Gerando o .xinitrc..."
-	{
-		cat <<EOF
-#!/bin/bash
-
-XDG_SESSION_TYPE=x11
-exec openbox-session
-
-EOF
-	} > $HOME/.xinitrc	
 	
 	echo "## Apagando Cache"
 	sudo rm /var/cache/xbps/*	

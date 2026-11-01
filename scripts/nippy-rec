@@ -244,6 +244,8 @@ run_cmd() {
 		chooseAudio
 	elif [[ "$1" == '--opt4' ]]; then
 		chooseFramerate
+	elif [[ "$1" == '--opt5' ]]; then
+		pkill ffmpeg
 	fi
 }
 

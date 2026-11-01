@@ -24,9 +24,8 @@ window () {
 	RASI="$DIR/window.rasi"
 	rofi \
     -show window \
-    -window-thumbnail \
-    -window-match-fields title \
-	-theme ${RASI}
+    -window-match-fields title,class,name \
+	-theme ${RASI} -p "󱂬  Window"
 }
 
 keybinds () {

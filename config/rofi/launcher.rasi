@@ -12,11 +12,11 @@
 configuration {
 	modi:                       "drun,run,window";
     show-icons:                 true;
-    display-drun:               "APPS";
-    display-run:                "RUN";
-    display-window:             "WINDOW";
-	drun-display-format:        "{name}";
-	window-format:              "{w} · {c} · {t}";
+    display-drun:               "󰀻  Apps";
+    display-run:                " Run";
+    display-window:             "󱂬  Window";
+    drun-display-format:        "{name}";
+    window-format: "[{w}] {t}";
 }
 
 /*****----- Global Properties -----*****/

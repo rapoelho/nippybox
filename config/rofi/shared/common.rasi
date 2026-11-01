@@ -12,6 +12,8 @@
 configuration {
 	me-select-entry: "MousePrimary";
 	me-accept-entry: "!MousePrimary";
+
+matching: "fuzzy";
 }
 /*****----- Global Properties -----*****/
 

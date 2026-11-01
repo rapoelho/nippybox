@@ -66,7 +66,7 @@ addRecent() {
 }
 
 prepareDB
-result=$(prepareList | rofi -i -dmenu -theme $RASI --kb-custom-1 "Alt+1" --kb-custom-2 "Alt+2" -p "󰞅 Emoji")
+result=$(prepareList | rofi -i -dmenu -theme $RASI --kb-custom-1 "Alt+1" --kb-custom-2 "Alt+2" -p "󰞅  Emoji")
 exit_value="$?"
 addRecent "$result"
 result=$(echo "$result" | grep -o '^\S\+' | tr -d '\n')

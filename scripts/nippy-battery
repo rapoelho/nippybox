@@ -94,17 +94,17 @@ def main():
     # Formatação baseada no argumento
     if mode == "all":
         batteries = f"{battery0} {battery1}"
-        if total_pct > 98 and is_charging == "Charging":
+        if total_pct > 95 and is_charging == "Charging":
             print(f"Full")
         else:
             print(f"{total_pct}% [{icon} {time_info}] {batteries.strip()} | {power_w:.2f} W  ")
     elif mode == "sum" or mode == "summary":
-        if total_pct > 98 and is_charging == "Charging":
+        if total_pct > 95 and is_charging == "Charging":
             print(f"Full")
         else:
             print(f"{total_pct}% [{icon} {time_info} | {power_w:.2f} W]  ")
     else: # Modo completo ("all" ou padrão)
-        if total_pct > 98 and is_charging == "Charging":
+        if total_pct > 95 and is_charging == "Charging":
             print(f"Full")
         else:
             print(f"{total_pct}% [{icon} {time_info} | {power_w:.2f} W]  ")

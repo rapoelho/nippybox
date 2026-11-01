@@ -1,28 +1,20 @@
 #! /bin/env python3
 import asyncio
 import subprocess
+import os
 from dbus_next.aio import MessageBus
 from dbus_next.constants import BusType
+from dbus_next.errors import InterfaceNotFoundError
 
 low_battery = 30.0
 
 percent_battery = 0.0
-state_battery = 0			# UpDeviceState: 1 Charging, 2 Discharging, 3 Empty, 4 Fully charged, 5 Pending charge, 6 Pending discharge
-on_battery_power = False	# True = sem o carregador (propriedade OnBattery do UPower)
-is_present = False
-mode_battery = ""			# Último modo aplicado: powersave, battery, charging, full, plugged
+status_battery = ""
+powersave_active = False
 
 bright_powersave = "20%"
 bright_battery = "40%"
 bright_ac = "70%"
-
-status_label = {
-	"powersave": "Discharging - On Battery (Low)",
-	"battery": "Discharging - On Battery",
-	"charging": "Charging - On AC",
-	"full": "Battery Full - On AC",
-	"plugged": "AC Plugged - Not Charging",
-}
 
 def get_uptime ():
 	try:
@@ -48,157 +40,147 @@ def set_bright (bright):
 	subprocess.run(["brightnessctl", "set", bright])
 
 def powersave ():
-	log_event ("battery", f"Low Battery: {percent_battery:.0f}%")
-	subprocess.run(["notify-send", "Low Battery!", f"{percent_battery:.0f}% remaining"])
+	global powersave_active
+	
+	log_event ("battery", f"Low Battery: {low_battery}")
+	subprocess.run(["notify-send", "Low Battery!", "Battery is running low!"])
 	log_event ("battery" , "Powersave: ON")
+	powersave_active = True
 	set_bright (bright_powersave)
 	
 def charging ():
-	subprocess.run(["notify-send", "Charging...", "Your Battery is charging..."])
+	global powersave_active
+	
+	if powersave_active:
+		log_event ("battery", "Powersave: OFF")
+		powersave_active = False
+		
+	subprocess.run(["notify-send", "Charging...", "Your Power Bridge is charging..."])
 	set_bright (bright_ac)
 	
 def full_battery ():
-	subprocess.run(["notify-send", "Battery Full", "Your Battery is fully charged"])
-	set_bright (bright_ac)
-
-def plugged ():
-	## Na tomada, mas sem carregar (ex.: limite de carga do ThinkPad)
-	subprocess.run(["notify-send", "AC Plugged", f"Your Battery is not charging ({percent_battery:.0f}%)"])
+	subprocess.run(["notify-send", "Battery Full", "Your Power Bridge is fully charged"])
 	set_bright (bright_ac)
 	
 def on_battery ():
-	subprocess.run(["notify-send", "On Battery", "Your Battery is discharging..."])
+	subprocess.run(["notify-send", "On Battery", "Running on Power Bridge discharging..."])
 	set_bright (bright_battery)
 
-def get_mode ():
-	## Sem o carregador
-	if on_battery_power:
-		if percent_battery <= low_battery:
-			return "powersave"
-		return "battery"
-	
-	## Na tomada
-	if state_battery == 4:
-		return "full"
-	if state_battery == 5:
-		return "plugged"
-	return "charging"
-
-def apply_mode (new_mode):
-	global mode_battery
-	
-	## Só age quando o modo muda (nada de notificação repetida)
-	if new_mode == mode_battery:
-		return
-	
-	if mode_battery == "powersave":
-		log_event ("battery", "Powersave: OFF")
-	
-	mode_battery = new_mode
-	log_event ("battery", f"Power Adapter: {status_label[new_mode]}")
-	
-	if new_mode == "powersave":
-		powersave ()
-	elif new_mode == "battery":
-		on_battery ()
-	elif new_mode == "charging":
-		charging ()
-	elif new_mode == "full":
-		full_battery ()
-	elif new_mode == "plugged":
-		plugged ()
-
-def update_mode ():
-	if is_present:
-		apply_mode (get_mode ())
-
-## Mudanças no DisplayDevice (porcentagem, estado, presença)
-def display_changed (interface_name, change_prop, invalid_prop):
-	global percent_battery
-	global state_battery
-	global is_present
-	
-	if 'IsPresent' in change_prop:
-		is_present = change_prop['IsPresent'].value
-		
-		if not is_present:
-			log_event ("warning", "No Battery Found!")
-	
-	if 'State' in change_prop:
-		state_battery = change_prop['State'].value
-	
-	if 'Percentage' in change_prop:
-		percent_battery = change_prop['Percentage'].value
-		log_event ("battery", f"Battery Status: {percent_battery:.1f}%")
-	
-	update_mode ()
-
-## Mudanças no UPower em si (carregador conectado/desconectado)
-def upower_changed (interface_name, change_prop, invalid_prop):
-	global on_battery_power
-	
-	if 'OnBattery' in change_prop:
-		on_battery_power = change_prop['OnBattery'].value
-		update_mode ()
-
 async def battery_monitor_client ():
-	## Variáveis
+	global powersave_active
+	global status_battery
 	global percent_battery
-	global state_battery
-	global on_battery_power
-	global is_present
 
-	## UPower
 	upower_dest = 'org.freedesktop.UPower'
 	upower_path = '/org/freedesktop/UPower'
 	upower_prop = 'org.freedesktop.DBus.Properties'
 	upower_device = 'org.freedesktop.UPower.Device'
 	
 	try:
-		## Conectando ao UPower
 		system_bus = await MessageBus(bus_type = BusType.SYSTEM).connect ()
-		introspect = await system_bus.introspect(upower_dest, upower_path)
-		upower_proxy = system_bus.get_proxy_object(upower_dest, upower_path, introspect)
-		upower_interface = upower_proxy.get_interface(upower_dest)
-		upower_properties = upower_proxy.get_interface(upower_prop)
 		
-		## Listando as Baterias (só para o log)
+		root_instrospect = await system_bus.introspect(upower_dest, upower_path)
+		root_proxy = system_bus.get_proxy_object(upower_dest, upower_path, root_instrospect)
+		upower_interface = root_proxy.get_interface(upower_dest)
+		
 		devices = await upower_interface.call_enumerate_devices()
+		battery_path = []
 		
 		for path in devices:
-			if 'battery' in path:
+			if 'battery_BAT' in path:
+				battery_path.append(path)
 				log_event ("daemon", f"Found Battery: {path}")
 		
-		## Pegando o DisplayDevice: a bateria "composta" do UPower, que soma
-		## todas as baterias presentes (1, 2 ou mais, inclusive trocadas a quente)
-		display_path = await upower_interface.call_get_display_device()
-		log_event ("daemon", f"Found Device: {display_path}")
-		
-		display_introspect = await system_bus.introspect(upower_dest, display_path)
-		display_proxy = system_bus.get_proxy_object (upower_dest, display_path, display_introspect)
-		display_properties = display_proxy.get_interface (upower_prop)
-		
-		## Pegando o Estado Inicial
-		on_battery_power = await upower_interface.get_on_battery()
-		
-		init_props = await display_properties.call_get_all(upower_device)
-		percent_battery = init_props['Percentage'].value
-		state_battery = init_props['State'].value
-		is_present = init_props['IsPresent'].value
-		
-		if not is_present:
+		if not battery_path:
 			log_event ("warning", "No Battery Found!")
-		else:
-			update_mode ()
-			log_event ("Battery", f"Battery Status: {percent_battery:.1f}% ({status_label[mode_battery]})")
+			return
 		
-		## Começando a Monitorar a Bateria
-		log_event ("daemon", "Monitoring Battery")
+		total_percentage = 0.0
+		active_states = []
+		count_bat = 0
 		
-		display_properties.on_properties_changed(display_changed)
-		upower_properties.on_properties_changed(upower_changed)
+		for b_path in battery_path:
+			try:
+				bat_intropect = await system_bus.introspect(upower_dest, b_path)
+				bat_proxy = system_bus.get_proxy_object (upower_dest, b_path, bat_intropect)
+				prop_interface = bat_proxy.get_interface (upower_device)
+				
+				props_interface = bat_proxy.get_interface(upower_prop)
+				
+				p_var = await props_interface.call_get(upower_device, 'Percentage')
+				s_var = await props_interface.call_get(upower_device, 'State')
+				
+				total_percentage += float (p_var.value)
+				active_states.append(int(s_var.value))
+				count_bat += 1
+		
+			except Exception as e:
+				print (f"[ERROR Initial State {b_path}] {e}")
+				
+			if count_bat > 0:
+				percent_battery = total_percentage / count_bat
+		
+			is_charging = 1 in active_states
+			is_full = all(s == 3 for s in active_states) and count_bat > 0
+			
+			if is_charging:
+				status_battery = "Charging - On AC"
+				charging ()
+				
+			elif is_full:
+				status_battery = "Battery Full - On AC"
+				full_battery ()
+			elif percent_battery <= low_battery:
+				status_battery = "Discharging - On Battery"
+				powersave ()
+			else:
+				status_battery = "Discharging - On Battery"
+				on_battery ()
+		
+			log_event ("Battery", f"Battery Status: {percent_battery}% ({status_battery})")
+			
+		for b_path in battery_path:
+			bat_intropect = await system_bus.introspect(upower_dest, b_path)
+			bat_proxy = system_bus.get_proxy_object (upower_dest, b_path, bat_intropect)
+			upower_properties = bat_proxy.get_interface (upower_device)
+		
+		def make_prop_changed (path_name):
+			def prop_changed (interface_name, change_prop, invalid_prop):
+				global powersave_active
+				global status_battery
+				global percent_battery
+				
+				if 'Percentage' in change_prop:
+					percent_battery = float(change_prop['Percentage'].value)
+					log_event ("battery", f"Battery Status: {percent_battery}%")
+					
+					if percent_battery <= low_battery and not powersave_active and status_battery != "Charging - On AC":
+						powersave ()
+				
+				if 'State' in change_prop:
+					now_status = int(change_prop['State'].value)
+					
+					if now_status == 1:
+						status_battery = "AC Plugged"
+						charging ()
+					elif now_status == 3 or percent_battery >= 99.0:
+						status_battery = "Battery Full"
+						full_battery ()
+					else:
+						status_battery = "On Battery"
+						
+						if percent_battery <= low_battery:
+							powersave ()
+						else:
+							on_battery ()
+						
+					log_event ("battery", f"[{path_name}] Power State Changed: {status_battery}")
+				return prop_changed
+			upower_properties.on_properties_changed (make_prop_changed(b_path))
 		await asyncio.get_running_loop().create_future()
+		
 	except Exception as e:
-			print (f"[ERROR] {e}")
+		print (f"[ERROR Daemon] {e}")
+
 if __name__ == "__main__":
 	asyncio.run(battery_monitor_client())

@@ -12,6 +12,9 @@
 @import                          "shared/common.rasi"
 @import                          "shared/colors.rasi"
 
+configuration {
+    matching: "fuzzy";
+}
 
 /*****----- Main Box -----*****/
 

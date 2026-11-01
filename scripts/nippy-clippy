@@ -11,7 +11,7 @@ elif [[ "$1" == "--restart" ]]; then
 	killall nippy-clippy-daemon
 	nippy-clippy-daemon
 else
-	INPUT=$(cat $HISTORY | rofi -dmenu -p " Clippy" -i -theme $RASI)
+	INPUT=$(cat $HISTORY | rofi -dmenu -p "  Clippy" -i -theme $RASI)
 	[[ -z "$INPUT" ]] || echo -e "$INPUT" | xclip -selection "clipboard" -rmlastnl
 fi
 

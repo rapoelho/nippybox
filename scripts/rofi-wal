@@ -8,13 +8,13 @@ userPicsDir=$(xdg-user-dir PICTURES) # Diretório de Imagens
 IFS=$';' # Para fazer com que o laço FOR mantenha o nome dos arquivos intactos
 
 rofiMode () {
-	option1=" Set as Wallpaper and Colorize"
-	option2=" Set as Wallpaper"
-	option3=" Set as Lockscreen"
+	option1="  Set as Wallpaper and Colorize"
+	option2="  Set as Wallpaper"
+	option3="  Set as Lockscreen"
 }
 
 runRofiMode () {
-	echo -e "$option1\n$option2\n$option3" | rofi -dmenu -p "󰸉 Wallpapers" -theme $confirmRASI
+	echo -e "$option1\n$option2\n$option3" | rofi -dmenu -p "󰸉  Wallpapers" -theme $confirmRASI
 }
 
 
@@ -56,7 +56,7 @@ walList() {
 	done < $wlist
 }
 	
-wallpaper=$(walList | rofi -dmenu -p "󰸉 Wallpapers" -theme $RASI) # Mostra o Rofi para escolher o Wallpaper
+wallpaper=$(walList | rofi -dmenu -p "󰸉  Wallpapers" -theme $RASI) # Mostra o Rofi para escolher o Wallpaper
 walPath=$(cat $wlist | grep $(echo ${wallpaper#[[:space:]]*}))
 
 if [ x"Current" = x"${wallpaper}" ]; then

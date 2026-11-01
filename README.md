@@ -13,12 +13,12 @@ O Script de Instalação do Nippybox instala um Openbox configurado a partir de 
 Os pacotes são instalados com o parâmetro de `-y` para não precisar da confirmação do usuário. Atualmente, o Script instala o XLibre para usar com o Openbox.
 
 ### Como executar o Script
-Para executar o Script, o melhor seria ter o `git` instalado, com o comando `sudo pacman -Syu git`. Com o git instalado, o Nippybox pode ser instalado com o comando:
+Para executar o Script, o melhor seria ter o `git` instalado, com o comando `sudo xbps-install -Su git`. Com o git instalado, o Nippybox pode ser instalado com o comando:
 ```
 git clone https://github.com/rapoelho/nippybox.git
 cd nippybox
-chmod +x install-old.sh
-./install-old.sh
+chmod +x install.sh
+./install.sh
 ```
 E com isso, o Nippybox será instalado.
 
@@ -45,7 +45,6 @@ Há outros pacotes que complementam a experiência do Openbox. Seja por facilita
 - **Slop:** Utilizado para fazer uma seleção na tela;
 - **XDG-User-Dirs:** É utilizado para gerar as pastas dos usuários;
 - **brightnessctl:** É utilizado pelo nippy-keys para o controle do brilho;
-- **clipnotify:** É utilizado pelo nippy-clippy.
 
 ### Seleção de Aplicativos
 Não é só do Openbox e dos Scripts que o Nippybox é formado, mas também de uma seleção de aplicativos que eu selecionei para usar junto com o Openbox que foi montado.
@@ -85,6 +84,6 @@ Não é só do Openbox e dos Scripts que o Nippybox é formado, mas também de u
 - Pode haver problemas de conexão com Fones Bluetooth quando o sistema volta da suspensão.
 
 ## TODO
-- Criar um Daemon de Energia para cuidar das coisas que o Sistema não cuida nativamente
-- Fazer o Betterlockscreen entrar em funcionamento quando o computador entra em hibernação
-- Refazer todo o Script de Instalação, adaptando ele totalmente para o Void Linux.
+- Criar um Daemon de Energia para cuidar das coisas que o Sistema não cuida nativamente [Feito]
+- Fazer o Betterlockscreen entrar em funcionamento quando o computador entra em hibernação [Feito]
+- Refazer todo o Script de Instalação, adaptando ele totalmente para o Void Linux. [Feito]

@@ -138,7 +138,7 @@ rec_area() {
 }
 
 option_1=" Capture Desktop"
-option_2=" Capture Area"
+option_2="󰆞  Capture Area"
 
 if [[ $audio == "mic" ]]; then
 	option_3="󰓃  Audio: Microphone"
@@ -205,6 +205,8 @@ chooseAudio () {
 			setAudio off
 			;;
 	esac
+	
+	showRofi
 }
 
 chooseFramerate () {
@@ -221,6 +223,8 @@ chooseFramerate () {
 			setFramerate 60
 			;;
 	esac
+	
+	showRofi
 }
 
 run_cmd() {

@@ -5,14 +5,23 @@
 ##
 ## Openbox Pipemenu to Record Screen with slop and ffmpeg
 
+nippyRecConfig="/tmp/nippy-rec"
+
 if ! [ -e "/tmp/nippy-rec" ]; then
-	echo "framerate=25" > /tmp/nippy-rec
+	echo "framerate=25" > $nippyRecConfig
+	echo "audio=mic" >> $nippyRecConfig
 fi
 
-source /tmp/nippy-rec
+RASI="$DIR/screenshot.rasi"
+
+source $nippyRecConfig
 
 setFramerate () {
-	echo "framerate=$1" > /tmp/nippy-rec
+	sed -i "s|^framerate=.*|framerate=$1|" $nippyRecConfig
+}
+
+setAudio () {
+	sed -i "s|^audio=.*|audio=$1|" $nippyRecConfig
 }
 
 pipemenu () {
@@ -68,6 +77,8 @@ time=`date +%Y-%m-%d-%H-%M-%S`
 screen=`xrandr | grep 'current' | head -n1 | cut -d',' -f2 | tr -d '[:blank:],current'`
 dir="`xdg-user-dir VIDEOS`/Screenrecorder"
 file="Capture_${time}.mp4"
+
+mesg="Directory: $dir"
 
 # Directory
 if [[ ! -d "$dir" ]]; then
@@ -126,6 +137,134 @@ rec_area() {
 	notify_user
 }
 
+option_1=" Capture Desktop"
+option_2=" Capture Area"
+
+if [[ $audio == "mic" ]]; then
+	option_3="󰓃  Audio: Microphone"
+elif [[ $audio == "desktop" ]]; then
+	option_3="󰽟  Audio: Desktop"
+elif [[ $audio == "off" ]]; then
+	option_3="󰓄  Audio: Off"
+fi
+
+option_3a="󰓃  Audio: Microphone"
+option_3b="󰽟  Audio: Desktop"
+option_3c="󰓄  Audio: Off"
+
+if [[ $framerate == 25 ]]; then
+	option_4="  Framerate: 25 FPS"
+elif [[ $framerate == 30 ]]; then
+	option_4="  Framerate: 30 FPS"
+elif [[ $framerate == 60 ]]; then
+	option_4="  Framerate: 60 FPS"
+fi
+
+option_4a="  Framerate: 25 FPS"
+option_4b="  Framerate: 30 FPS"
+option_4c="  Framerate: 60 FPS"
+
+option_5="Stop Recording"
+
+rofi_cmd() {
+	rofi -dmenu \
+		-mesg "$mesg" \
+		-markup-rows \
+		-theme ${RASI} -p "$prompt"
+}
+
+run_rofi() {
+	if  [[ `pidof ffmpeg` ]]; then
+		prompt=" Recording - $(recTime)"
+		echo "$option_5" | rofi_cmd
+	else
+		prompt=" Record Desktop"
+		echo -e "$option_1\n$option_2\n$option_3\n$option_4" | rofi_cmd
+	fi
+}
+
+chAudio () {
+	echo -e "$option_3a\n$option_3b\n$option_3c" | rofi_cmd
+}
+
+chFramerate () {
+	echo -e "$option_4a\n$option_4b\n$option_4c" | rofi_cmd
+}
+
+chooseAudio () {
+	audioChosen="$(chAudio)"
+	
+	case ${audioChosen} in
+		$option_3a)
+			setAudio mic
+			;;
+		$option_3b)
+			setAudio desktop
+			;;
+		$option_3c)
+			setAudio off
+			;;
+	esac
+}
+
+chooseFramerate () {
+	framerateChosen="$(chFramerate)"
+	
+	case ${framerateChosen} in
+		$option_4a)
+			setFramerate 25
+			;;
+		$option_4b)
+			setFramerate 30
+			;;
+		$option_4c)
+			setFramerate 60
+			;;
+	esac
+}
+
+run_cmd() {
+	if [[ "$1" == '--opt1' ]]; then
+		if [[ $audio == "mic" ]]; then
+			rec_screen
+		elif [[ $audio == "desktop" ]]; then
+			rec_screen desktop
+		elif [[ $audio == "off" ]]; then
+			rec_screen noaudio
+		fi
+	elif [[ "$1" == '--opt2' ]]; then
+		if [[ $audio == "mic" ]]; then
+			rec_area
+		elif [[ $audio == "desktop" ]]; then
+			rec_area desktop
+		elif [[ $audio == "off" ]]; then
+			rec_area noaudio
+		fi
+	elif [[ "$1" == '--opt3' ]]; then
+		chooseAudio
+	elif [[ "$1" == '--opt4' ]]; then
+		chooseFramerate
+	fi
+}
+
+showRofi () {
+	chosen="$(run_rofi)"
+	case ${chosen} in
+		$option_1)
+			run_cmd --opt1
+			;;
+		$option_2)
+			run_cmd --opt2
+			;;
+		$option_3)
+			run_cmd --opt3
+			;;
+		$option_4)
+			run_cmd --opt4
+			;;
+	esac
+}
+
 if [[ "$1" == "--screen" ]]; then
 	rec_screen
 elif [[ "$1" == "--screen-desktop" ]]; then
@@ -140,10 +279,14 @@ elif [[ "$1" == "--area-na" ]]; then
 	rec_area noaudio
 elif [[ "$1" == "--pipe" ]]; then
 	pipemenu
+elif [[ "$1" == "--rofi" ]]; then
+	showRofi
+elif [[ "$1" == "--setaudio" ]]; then
+	setAudio $2
 elif [[ "$1" == "--setframerate" ]]; then
 	setFramerate $2
 else
-    echo -e "Available Options : --screen --screen-na --screen-desktop --area --area-na --area-desktop --setframerate"
+    echo -e "Available Options : --screen --screen-na --screen-desktop --area --area-na --area-desktop --setframerate --setaudio --rofi"
 fi
 
 exit 0

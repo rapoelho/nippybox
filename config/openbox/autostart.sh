@@ -28,3 +28,6 @@ conky &
 
 ## Clippy
 nippy-clippy-daemon &
+
+## Keyboard/Mouse Settings
+nippy-session &

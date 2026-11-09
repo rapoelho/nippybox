@@ -8,20 +8,21 @@
 nippyRecConfig="/tmp/nippy-rec"
 
 if ! [ -e "/tmp/nippy-rec" ]; then
-	echo "framerate=25" > $nippyRecConfig
-	echo "audio=mic" >> $nippyRecConfig
+	echo "framerate=25" > "$nippyRecConfig"
+	echo "audio=mic" >> "$nippyRecConfig"
 fi
 
+DIR="$HOME/.config/rofi"
 RASI="$DIR/screenshot.rasi"
 
-source $nippyRecConfig
+source "$nippyRecConfig"
 
 setFramerate () {
-	sed -i "s|^framerate=.*|framerate=$1|" $nippyRecConfig
+	sed -i "s|^framerate=.*|framerate=$1|" "$nippyRecConfig"
 }
 
 setAudio () {
-	sed -i "s|^audio=.*|audio=$1|" $nippyRecConfig
+	sed -i "s|^audio=.*|audio=$1|" "$nippyRecConfig"
 }
 
 pipemenu () {
@@ -60,7 +61,7 @@ pipemenu () {
 }
 
 recTime () {
-	source /tmp/nippy-rec-time
+	startTime="$(sed -n 's/^startTime=//p' /tmp/nippy-rec-time)"
 	currentTime=$(date +%s)
 	
 	time=$(( $currentTime - $startTime ))
@@ -110,29 +111,29 @@ rec_screen() {
 	countdown '3'
 	sleep 1
 	if [[ "$1" == "noaudio" ]]; then
-		ffmpeg -video_size ${screen} -framerate $framerate -f x11grab -i :0.0+0,0 ${dir}/${file}
+		ffmpeg -video_size "$screen" -framerate "$framerate" -f x11grab -i :0.0+0,0 "${dir}/${file}"
 	elif [[ "$1" == "desktop" ]]; then
-		desktopAudio="$(pactl list sinks | grep $(pactl get-default-sink).monitor | cut -d : -f 2)"
-		ffmpeg -f x11grab -video_size ${screen} -framerate $framerate -i :0.0 -f pulse -i ${desktopAudio} -preset ultrafast -crf 18 -pix_fmt yuv420p ${dir}/${file}
+		desktopAudio="$(pactl get-default-sink).monitor"
+		ffmpeg -f x11grab -video_size "$screen" -framerate "$framerate" -i :0.0 -f pulse -i "$desktopAudio" -preset ultrafast -crf 18 -pix_fmt yuv420p "${dir}/${file}"
 	else
-		ffmpeg -video_size ${screen} -framerate $framerate -f x11grab -i :0.0+0,0 -f pulse -ac 2 -i default ${dir}/${file}
+		ffmpeg -video_size "$screen" -framerate "$framerate" -f x11grab -i :0.0+0,0 -f pulse -ac 2 -i default "${dir}/${file}"
 	fi
 	notify_user
 }
 
 rec_area() {
-	get_win_data=$(slop -f "%x %y %w %h %g %i") || exit 1
-	read -r X Y < <(echo $get_win_data)
+	get_win_data=$(slop -f "%x %y %w %h") || exit 1
+	read -r X Y W H _ < <(echo "$get_win_data")
 	
 	countdown '3'
 	sleep 1
 	if [[ "$1" == "noaudio" ]]; then
-		ffmpeg -video_size ${W}x${H} -framerate $framerate -f x11grab -i :0.0+${X},${Y} ${dir}/${file}
+		ffmpeg -video_size "${W}x${H}" -framerate "$framerate" -f x11grab -i ":0.0+${X},${Y}" "${dir}/${file}"
 	elif [[ "$1" == "desktop" ]]; then
-		desktopAudio="$(pactl list sinks | grep $(pactl get-default-sink).monitor | cut -d : -f 2)"
-		ffmpeg -video_size ${W}x${H} -framerate $framerate -f x11grab -i :0.0+${X},${Y} -f pulse -i ${desktopAudio} ${dir}/${file}
+		desktopAudio="$(pactl get-default-sink).monitor"
+		ffmpeg -video_size "${W}x${H}" -framerate "$framerate" -f x11grab -i ":0.0+${X},${Y}" -f pulse -i "$desktopAudio" "${dir}/${file}"
 	else
-		ffmpeg -video_size ${W}x${H} -framerate $framerate -f x11grab -i :0.0+${X},${Y} -f pulse -ac 2 -i default ${dir}/${file}
+		ffmpeg -video_size "${W}x${H}" -framerate "$framerate" -f x11grab -i ":0.0+${X},${Y}" -f pulse -ac 2 -i default "${dir}/${file}"
 	fi
 	notify_user
 }
@@ -170,7 +171,7 @@ rofi_cmd() {
 	rofi -dmenu \
 		-mesg "$mesg" \
 		-markup-rows \
-		-theme ${RASI} -p "$prompt"
+		-theme "$RASI" -p "$prompt"
 }
 
 run_rofi() {
@@ -288,9 +289,9 @@ elif [[ "$1" == "--pipe" ]]; then
 elif [[ "$1" == "--rofi" ]]; then
 	showRofi
 elif [[ "$1" == "--setaudio" ]]; then
-	setAudio $2
+	setAudio "$2"
 elif [[ "$1" == "--setframerate" ]]; then
-	setFramerate $2
+	setFramerate "$2"
 else
     echo -e "Available Options : --screen --screen-na --screen-desktop --area --area-na --area-desktop --setframerate --setaudio --rofi"
 fi

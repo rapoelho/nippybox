@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
-set -x
 ## Copyright (C) 2020-2024 Aditya Shakya <adi1090x@gmail.com>
 
 RASI="$HOME/.config/rofi/colorpicker.rasi"
 folderColor="$HOME/.cache/nippy-colorpicker"
 
-if ! [ -d "$folderColor" ]; then # Verificando se a pasta existe
-		mkdir "$folderColor"
+if [ ! -d "$folderColor" ]; then # Verificando se a pasta existe
+	mkdir -p "$folderColor"
 fi
 
 getColor () {
-	find $folderColor -iname '*.png' > $HOME/.cache/colors
+	find "$folderColor" -iname '*.png' > "$HOME/.cache/colors"
 }
 
 rofiPick () {
@@ -19,26 +18,27 @@ rofiPick () {
 }
 
 listColor () {
-	echo $option1
+	echo "$option1"
 	getColor
-	
+
 	while IFS= read -r color; do
-		colorName="$(cat $HOME/.cache/colors | grep $color | sed 's#.*/##' | sed 's/\.[^.]*$//')"
+		colorName="${color##*/}"
+		colorName="${colorName%.png}"
 		echo -en "$colorName\0icon\x1f$color\n"
-	done < $HOME/.cache/colors
-	
-	echo $option2
+	done < "$HOME/.cache/colors"
+
+	echo "$option2"
 }
 
 selectColor() {
 	color=$(xcolor --format hex --preview-size 255 --scale 10)
-	filename="$(echo $color | sed 's/#//g')"
+	filename="${color//#/}"
 	image="$folderColor/$filename.png"
-	
-	if [[ "$color" ]]; then
-		echo $color | tr -d "\n" | xclip -selection clipboard
-		magick -size 48x48 xc:"$color" $image
-		dunstify -u low -h string:x-dunst-stack-tag:obcolorpicker -i $image "$color, copied to clipboard."
+
+	if [ -n "$color" ]; then
+		echo "$color" | tr -d "\n" | xclip -selection clipboard
+		magick -size 48x48 xc:"$color" "$image"
+		dunstify -u low -h string:x-dunst-stack-tag:obcolorpicker -i "$image" "$color, copied to clipboard."
 	fi
 }
 
@@ -46,13 +46,13 @@ if [[ "$1" == "picker" ]]; then
 	selectColor
 elif [[ "$1" == "rofi" ]]; then
 	rofiPick
-	colorChoose=$(listColor | rofi -dmenu -theme $RASI)
-	
+	colorChoose=$(listColor | rofi -dmenu -theme "$RASI")
+
 	if [[ "$colorChoose" == "$option1" ]]; then
 		selectColor
 	elif [[ "$colorChoose" == "$option2" ]]; then
-		rm $folderColor/*
-	else
+		rm -f "$folderColor"/*
+	elif [[ -n "$colorChoose" ]]; then
 		echo -e "#$colorChoose" | xclip -selection clipboard
 	fi
 fi

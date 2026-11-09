@@ -5,7 +5,6 @@ confirmRASI="$HOME/.config/rofi/wallConfirm.rasi"
 walDir="/usr/share/backgrounds" # Wallpapers do Sistema
 wlist="$HOME/.cache/wlist" # Lista temporária de Wallpapers
 userPicsDir=$(xdg-user-dir PICTURES) # Diretório de Imagens
-IFS=$';' # Para fazer com que o laço FOR mantenha o nome dos arquivos intactos
 
 rofiMode () {
 	option1="  Set as Wallpaper and Colorize"
@@ -14,7 +13,7 @@ rofiMode () {
 }
 
 runRofiMode () {
-	echo -e "$option1\n$option2\n$option3" | rofi -dmenu -p "󰸉  Wallpapers" -theme $confirmRASI
+	echo -e "$option1\n$option2\n$option3" | rofi -dmenu -p "󰸉  Wallpapers" -theme "$confirmRASI"
 }
 
 
@@ -22,14 +21,14 @@ selectMode () {
 	rofiMode
 	choose=$(runRofiMode)
 	
-	case ${choose} in
-	$option1)
+	case "$choose" in
+	"$option1")
 		nippy-wal --colorize "$walPath"
         ;;
-    $option2)
+    "$option2")
 		nippy-wal --wallpaper "$walPath"
         ;;
-    $option3)
+    "$option3")
 		nippy-wal --lockscreen "$walPath"
         ;;
     esac
@@ -38,30 +37,28 @@ selectMode () {
 getWal () {
 	# Verificando se há alguma pasta de Wallpapers no Usuário
 	if [ -d "$userPicsDir/Wallpapers" ]; then
-		find $userPicsDir/Wallpapers -iname '*.png' -o -iname '*.jpg' >> $wlist
+		find "$userPicsDir/Wallpapers" -iname '*.png' -o -iname '*.jpg' >> "$wlist"
 	elif [ -d "$userPicsDir/wallpapers" ]; then
-		find $userPicsDir/wallpapers -iname '*.png' -o -iname '*.jpg' >> $wlist
+		find "$userPicsDir/wallpapers" -iname '*.png' -o -iname '*.jpg' >> "$wlist"
 	else
-		mkdir "$userPicsDir/Wallpapers"
+		mkdir -p "$userPicsDir/Wallpapers"
 	fi
 }
 
 walList() {
-	find $walDir -iname '*.png' -o -iname '*.jpg' > $wlist
+	find "$walDir" -iname '*.png' -o -iname '*.jpg' > "$wlist"
 	getWal			
 
 	while IFS= read -r tempWal; do
-		walName="$(cat $wlist | grep $tempWal | sed 's#.*/##')"
-		echo -en "$walName\0icon\x1f$tempWal\n"
-	done < $wlist
+		walName="${tempWal##*/}"
+		printf '%s\0icon\x1f%s\n' "$walName" "$tempWal"
+	done < "$wlist"
 }
 	
-wallpaper=$(walList | rofi -dmenu -p "󰸉  Wallpapers" -theme $RASI) # Mostra o Rofi para escolher o Wallpaper
-walPath=$(cat $wlist | grep $(echo ${wallpaper#[[:space:]]*}))
+wallpaper=$(walList | rofi -dmenu -p "󰸉  Wallpapers" -theme "$RASI") # Mostra o Rofi para escolher o Wallpaper
+walPath=$(awk -F/ -v n="$wallpaper" '$NF == n {print; exit}' "$wlist")
 
-if [ x"Current" = x"${wallpaper}" ]; then
-	exit
-elif [ -n "${wallpaper}" ]; then	
-	magick "$walPath" -gravity center -crop 16:9 +repage -thumbnail 400x400 -quality 00 "$HOME/.config/rofi/shared/sel-wallpaper.png"
+if [ -n "$wallpaper" ] && [ -n "$walPath" ]; then
+	magick "$walPath" -gravity center -crop 16:9+0+0 +repage -thumbnail 400x400 -quality 00 "$HOME/.config/rofi/shared/sel-wallpaper.png"
 	selectMode
 fi

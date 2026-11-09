@@ -10,14 +10,14 @@ launcher () {
 	rofi \
     -show drun \
 	-kb-cancel Escape \
-	-theme ${RASI}
+	-theme "$RASI"
 }
 
 run () {
 	RASI="$DIR/runner.rasi"
 	rofi \
     -show run \
-	-theme ${RASI} -p " Run"
+	-theme "$RASI" -p " Run"
 }
 
 window () {
@@ -25,15 +25,15 @@ window () {
 	rofi \
     -show window \
     -window-match-fields title,class,name \
-	-theme ${RASI} -p "󱂬  Window"
+	-theme "$RASI" -p "󱂬  Window"
 }
 
 keybinds () {
 	RASI="$DIR/keys.rasi"
-	column -t -s ';' ~/.config/nippybox/keybinds | rofi \
+	column -t -s ';' "$HOME/.config/nippybox/keybinds" | rofi \
 	-i -dmenu \
 	-markup-rows \
-	-theme ${RASI}
+	-theme "$RASI"
 }
 
 if [[ "$1" == "run" ]]; then

@@ -1,113 +1,200 @@
 #!/usr/bin/env python3
 import sys
+from pathlib import Path
+
+SYSFS_ROOT = Path("/sys/class/power_supply")
+MODE_FILE = Path("/tmp/polybar_bat_mode")
+
+LOW_THRESHOLD = 30
+FULL_THRESHOLD = 99
+HIDE_THRESHOLD = 5
+
 
 def read_sysfs(path):
     try:
-        with open(path, 'r') as f:
-            return f.read().strip()
-    except (FileNotFoundError, PermissionError):
+        return Path(path).read_text().strip()
+    except (OSError, UnicodeDecodeError):
         return None
 
-def get_bat_data(bat_name):
-    base = f"/sys/class/power_supply/{bat_name}"
-    present = read_sysfs(f"{base}/present") == "1"
-    if not present:
+
+def read_int(path, default=0):
+    value = read_sysfs(path)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        try:
+            return int(float(value))
+        except ValueError:
+            return default
+
+
+def get_bat_data(base):
+    base = Path(base)
+
+    # "present" não existe em todos os drivers; nesse caso assume presente.
+    if read_sysfs(base / "present") == "0":
         return None
 
-    energy_now = int(read_sysfs(f"{base}/energy_now") or 0)
-    energy_full = int(read_sysfs(f"{base}/energy_full") or 0)
-    power_now = int(read_sysfs(f"{base}/power_now") or 0)
-    status = read_sysfs(f"{base}/status") or "Unknown"
+    voltage = read_int(base / "voltage_now", None)
+    status = read_sysfs(base / "status") or "Unknown"
 
-    pct = int((energy_now / energy_full) * 100) if energy_full > 0 else 0
+    energy_now = read_int(base / "energy_now", None)
+    energy_full = read_int(base / "energy_full", None)
+
+    # Alguns drivers expõem charge_* (µAh) em vez de energy_* (µWh).
+    if energy_now is None or energy_full is None or energy_full <= 0:
+        charge_now = read_int(base / "charge_now", None)
+        charge_full = read_int(base / "charge_full", None)
+        if charge_now is not None and charge_full is not None and charge_full > 0:
+            if voltage is not None and voltage > 0:
+                # µAh * µV / 10^6 = µWh
+                energy_now = charge_now * voltage / 1_000_000
+                energy_full = charge_full * voltage / 1_000_000
+            else:
+                # Sem tensão, usa a carga como se fosse energia. O percentual
+                # continua válido, mas o tempo pode ficar indisponível.
+                energy_now = charge_now
+                energy_full = charge_full
+        else:
+            return None
+
+    power = read_int(base / "power_now", None)
+    if power is None or power == 0:
+        current = read_int(base / "current_now", None)
+        if current is not None and voltage is not None and voltage > 0:
+            # µA * µV / 10^6 = µW
+            power = abs(current) * voltage / 1_000_000
+        else:
+            power = 0
+    power = abs(power)
+
+    pct = round((energy_now / energy_full) * 100) if energy_full > 0 else 0
+    pct = max(0, min(100, pct))
 
     return {
-        "energy_now": energy_now,
-        "energy_full": energy_full,
-        "power_now": power_now,
+        "name": base.name,
+        "energy_now": max(0, energy_now),
+        "energy_full": max(0, energy_full),
+        "power_now": max(0, power),
         "status": status,
-        "pct": pct
+        "pct": pct,
     }
 
-def calculate_time_str(energy_needed_or_remaining, power_w_microwatts):
-    if power_w_microwatts <= 0:
-        return "Wait..."
-    
-    hours_decimal = energy_needed_or_remaining / power_w_microwatts
-    hours = int(hours_decimal)
-    minutes = int((hours_decimal - hours) * 60)
-    
-    if hours > 24:
+
+def get_batteries():
+    try:
+        entries = sorted(SYSFS_ROOT.iterdir())
+    except OSError:
+        return []
+
+    batteries = []
+    for entry in entries:
+        battery_type = read_sysfs(entry / "type")
+        if battery_type not in (None, "Battery"):
+            continue
+
+        battery = get_bat_data(entry)
+        if battery is not None:
+            batteries.append(battery)
+
+    return batteries
+
+
+def calculate_time_str(energy_remaining, power_microwatts):
+    if power_microwatts <= 0:
         return "Wait..."
 
-    hours_str = str(hours) if hours > 9 else str(0) + str(hours)
-    
-    return f"{hours_str}:{minutes:02d}"
+    if energy_remaining <= 0:
+        return "00:00"
+
+    total_minutes = round((energy_remaining / power_microwatts) * 60)
+    if total_minutes > 24 * 60:
+        return "Wait..."
+
+    hours, minutes = divmod(total_minutes, 60)
+    return f"{hours:02d}:{minutes:02d}"
+
+
+def get_mode():
+    if len(sys.argv) > 1:
+        return sys.argv[1]
+
+    return read_sysfs(MODE_FILE) or "summary"
+
 
 def main():
-    # Lendo o argumento passado (ex: summary, detailed, total)
-    if len(sys.argv) > 1:
-        mode = sys.argv[1]
-    else:
-        try:
-            with open("/tmp/polybar_bat_mode", "r") as f:
-                mode = f.read().strip()
-        except FileNotFoundError:
-            mode = "summary"
-    
-    bat0 = get_bat_data("BAT0") # Interna
-    bat1 = get_bat_data("BAT1") # Externa
+    mode = get_mode()
+    batteries = get_batteries()
 
-    if not bat0 and not bat1:
+    if not batteries:
         print("No Batteries")
         return
 
-    total_now = (bat0["energy_now"] if bat0 else 0) + (bat1["energy_now"] if bat1 else 0)
-    total_full = (bat0["energy_full"] if bat0 else 0) + (bat1["energy_full"] if bat1 else 0)
-    total_pct = int((total_now / total_full) * 100) if total_full > 0 else 0
+    total_now = sum(battery["energy_now"] for battery in batteries)
+    total_full = sum(battery["energy_full"] for battery in batteries)
+    total_pct = round((total_now / total_full) * 100) if total_full > 0 else 0
+    total_pct = max(0, min(100, total_pct))
 
-    total_power = (bat0["power_now"] if bat0 else 0) + (bat1["power_now"] if bat1 else 0)
+    total_power = sum(battery["power_now"] for battery in batteries)
     power_w = total_power / 1_000_000
 
-    is_charging = (bat0 and bat0["status"] == "Charging") or (bat1 and bat1["status"] == "Charging")
-    
-    if is_charging:
-        energy_needed = total_full - total_now
-        time_str = calculate_time_str(energy_needed, total_power)
-        icon = "CHA" if total_pct <= 99 else "FULL"
-        time_info = f"+{time_str}"
-    else:
-        time_str = calculate_time_str(total_now, total_power)
-        icon = "LOW" if bat0['pct'] <= 30 else "DIS"
+    charging = [battery for battery in batteries if battery["status"] == "Charging"]
+    discharging = [battery for battery in batteries if battery["status"] == "Discharging"]
+
+    is_full = total_pct >= FULL_THRESHOLD and not charging and not discharging
+    primary = batteries[0]
+
+    if is_full:
+        print("Full")
+        return
+
+    if charging:
+        energy_needed = sum(
+            max(0, battery["energy_full"] - battery["energy_now"])
+            for battery in charging
+        )
+        charge_power = sum(battery["power_now"] for battery in charging)
+        time_str = calculate_time_str(energy_needed, charge_power)
+        icon = "CHA"
+        time_info = f"+{time_str}" if time_str != "Wait..." else time_str
+    elif discharging:
+        # A bateria secundária em <= 5% fica como reserva e não é usada.
+        active = [
+            battery
+            for index, battery in enumerate(batteries)
+            if index == 0 or battery["pct"] > HIDE_THRESHOLD
+        ]
+        energy_remaining = sum(battery["energy_now"] for battery in active)
+        discharge_power = sum(battery["power_now"] for battery in active)
+        if discharge_power <= 0:
+            discharge_power = total_power
+
+        time_str = calculate_time_str(energy_remaining, discharge_power)
+        icon = "LOW" if primary["pct"] <= LOW_THRESHOLD else "DIS"
         time_info = time_str
-	
-    if bat0:
-        battery0 = f"| BAT0 {bat0['pct']}%"
     else:
-        battery0 = ""
-    
-    if bat1 and bat1['pct'] > 5:
-        battery1 = f"| BAT1 {bat1['pct']}%"
-    else:
-        battery1 = ""
-	
+        # Na tomada, mas sem carregar (ex.: carga completa ou conservação).
+        icon = "AC"
+        time_info = "--:--"
+
+    battery_parts = []
+    for index, battery in enumerate(batteries):
+        if index == 0 or battery["pct"] > HIDE_THRESHOLD:
+            battery_parts.append(f"| {battery['name']} {battery['pct']}%")
+    batteries_str = " ".join(battery_parts)
+
     # Formatação baseada no argumento
-    if mode == "all":
-        batteries = f"{battery0} {battery1}"
-        if total_pct > 95 and is_charging == "Charging":
-            print(f"Full")
-        else:
-            print(f"{total_pct}% [{icon} {time_info}] {batteries.strip()} | {power_w:.2f} W  ")
-    elif mode == "sum" or mode == "summary":
-        if total_pct > 95 and is_charging == "Charging":
-            print(f"Full")
-        else:
-            print(f"{total_pct}% [{icon} {time_info} | {power_w:.2f} W]  ")
-    else: # Modo completo ("all" ou padrão)
-        if total_pct > 95 and is_charging == "Charging":
-            print(f"Full")
-        else:
-            print(f"{total_pct}% [{icon} {time_info} | {power_w:.2f} W]  ")
+    if mode in ("all", "detailed"):
+        print(
+            f"{total_pct}% [{icon} {time_info}] {batteries_str} | {power_w:.2f} W  "
+        )
+    elif mode in ("sum", "summary", "total"):
+        print(f"{total_pct}% [{icon} {time_info} | {power_w:.2f} W]  ")
+    else:
+        print(f"{total_pct}% [{icon} {time_info} | {power_w:.2f} W]  ")
+
 
 if __name__ == "__main__":
     main()

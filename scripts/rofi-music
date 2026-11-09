@@ -9,13 +9,13 @@ DIR="$HOME/.config/rofi"
 RASI="$DIR/music.rasi"
 
 # Theme Elements
-player="$(playerctl -l | head -n 1)"
-status=$(playerctl status)
+player="$(playerctl -l 2>/dev/null | head -n 1)"
 if [[ -z "$player" ]]; then
 	prompt="No Players"
 	mesg="No MPRIS Players Running"
+	status=""
 else
-	music=`playerctl metadata title`
+	status=$(playerctl -p "$player" status)
 	prompt="Player: $player"
 	mesg=$(playerctl -p "$player" metadata --format "{{title}} :: current {{ duration(position) }}")
 fi
@@ -33,18 +33,13 @@ fi
 	option_4=" Next"
 
 
-# Toggle Actions
-active=''
-urgent=''
-
 # Rofi CMD
 rofi_cmd() {
 	rofi -dmenu \
 		-p "$prompt" \
 		-mesg "$mesg" \
-		${active} ${urgent} \
-		-markup-rows false \
-		-theme ${RASI}
+		-markup-rows \
+		-theme "$RASI"
 }
 
 # Pass variables to rofi dmenu
@@ -67,7 +62,7 @@ run_cmd() {
 
 # Actions
 chosen="$(run_rofi)"
-case ${chosen} in
+case "$chosen" in
     $option_1)
 		run_cmd --opt1
         ;;

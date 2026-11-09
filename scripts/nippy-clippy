@@ -5,14 +5,15 @@ HISTORY="$HOME/.clipboard.history"
 
 ## Apagar o Histórico do Nippy Clippy
 if [[ "$1" == "--clear" ]]; then
-	rm $HISTORY
-	touch $HISTORY
+	rm -f "$HISTORY"
+	touch "$HISTORY"
+	chmod 600 "$HISTORY"
 elif [[ "$1" == "--restart" ]]; then
-	killall nippy-clippy-daemon
-	nippy-clippy-daemon
+	killall nippy-clippy-daemon 2>/dev/null || true
+	nohup nippy-clippy-daemon >/dev/null 2>&1 &
 else
-	INPUT=$(cat $HISTORY | rofi -dmenu -p "  Clippy" -i -theme $RASI)
-	[[ -z "$INPUT" ]] || echo -e "$INPUT" | xclip -selection "clipboard" -rmlastnl
+	INPUT=$(rofi -dmenu -p "  Clippy" -i -theme "$RASI" < "$HISTORY")
+	[[ -z "$INPUT" ]] || printf '%b\n' "$INPUT" | xclip -selection "clipboard" -rmlastnl
 fi
 
 

@@ -8,7 +8,7 @@
 pipemenu () {
 	MENUS_LIBDIR="$HOME/.config/openbox/"
 	if ! . "$MENUS_LIBDIR/pipebase.cfg" 2> /dev/null; then
-		echo $"Error: Failed to locate pipebase.cfg in $MENUS_LIBDIR" >&2
+		echo "Error: Failed to locate pipebase.cfg in $MENUS_LIBDIR" >&2
 		exit 1
 	fi
 
@@ -30,7 +30,7 @@ menuEnd
 os=`uname -o`
 
 ##-- DISTRO ------------------------
-distro=`cat /etc/os-release | grep NAME= | head -n1 | cut -d'=' -f2 | tr -d \"`
+distro=`cat /etc/os-release | grep '^NAME=' | head -n1 | cut -d'=' -f2 | tr -d \"`
 
 ##-- KERNEL ------------------------
 kernel=`uname -sr`
@@ -39,7 +39,7 @@ kernel=`uname -sr`
 machine=`uname -m`
 
 ##-- CPU ------------------------
-cpu=`cat /proc/cpuinfo | grep 'model name' | cut -d':' -f2 | uniq`
+cpu=`cat /proc/cpuinfo | grep 'model name' | cut -d':' -f2 | head -n1`
 
 ##-- MEMORY ------------------------
 m_total="`free -m | grep 'Mem' | tr -s '[:blank:]' | cut -d' ' -f2`MB"
@@ -64,16 +64,7 @@ b_cap=`acpi -i | tail -n1 | cut -d'=' -f2 | tr -d "[:blank:]"`
 backlight=$(brightnessctl | grep "Current" | awk -F '(' '{print $2}' | cut -d ")" -f1)
 
 ##-- UPTIME ------------------------
-uptime=`uptime -p | awk '{print $2 " " $3 " " $4 " " $5}'`
-
-##-- LOAD ------------------------
-load=`cat /proc/loadavg`
-
-##-- WIFI ------------------------
-interface=`nmcli device status | grep "wifi" | tr -s '[:blank:]' | cut -d' ' -f1`
-type=`nmcli device status | grep "wifi" | tr -s '[:blank:]' | cut -d' ' -f2`
-status=`nmcli device status | grep "wifi" | tr -s '[:blank:]' | cut -d' ' -f3`
-ssid=`nmcli device status | grep "wifi" | tr -s '[:blank:]' | cut -d' ' -f4`
+uptime=`uptime -p | sed 's/^up //'`
 
 ##-- MENU ------------------------
 

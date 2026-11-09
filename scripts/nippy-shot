@@ -6,11 +6,12 @@
 
 DIR="$HOME/.config/rofi"
 RASI="$DIR/screenshot.rasi"
-mesg="Directory: `xdg-user-dir PICTURES`/Screenshots"
+mesg="Directory: $(xdg-user-dir PICTURES)/Screenshots"
 
 # pipemenu
 pipemenu () {
 	MENUS_LIBDIR="$HOME/.config/openbox/"
+	# shellcheck source=/dev/null
 	if ! source "$MENUS_LIBDIR/pipebase.cfg" 2> /dev/null; then
 		echo $"Error: Failed to locate pipebase.cfg in $MENUS_LIBDIR" >&2
 		exit 1
@@ -28,9 +29,9 @@ pipemenu () {
 }
 
 # file
-time=`date +%Y-%m-%d-%H-%M-%S`
-geometry=`xrandr | grep 'current' | head -n1 | cut -d',' -f2 | tr -d '[:blank:],current'`
-dir="`xdg-user-dir PICTURES`/Screenshots"
+time=$(date +%Y-%m-%d-%H-%M-%S)
+geometry=$(xrandr | grep 'current' | head -n1 | cut -d',' -f2 | tr -d '[:blank:],current')
+dir="$(xdg-user-dir PICTURES)/Screenshots"
 file="Screenshot_${time}_${geometry}.png"
 border='0.000,0.735,0.832'
 
@@ -48,12 +49,31 @@ notify_view () {
 
 # copy screenshot to clipboard
 copy_shot () {
-	tee "$file" | xclip -selection clipboard -t image/png
+	xclip -selection clipboard -t image/png < "$1"
+}
+
+# capture to a temporary file and only keep/notify on success
+take_shot () {
+	local tmp
+	tmp="$(mktemp)" || return 1
+	if "$@" > "$tmp" && [ -s "$tmp" ]; then
+		mv "$tmp" "$dir/$file"
+		copy_shot "$dir/$file"
+		notify_view
+	else
+		rm -f "$tmp"
+		return 1
+	fi
+}
+
+# active window id for maim
+active_window () {
+	xprop -root _NET_ACTIVE_WINDOW | awk '{print $5}'
 }
 
 # countdown
 countdown () {
-	for sec in `seq $1 -1 1`; do
+	for sec in $(seq "$1" -1 1); do
 		dunstify -t 1000 -h string:x-dunst-stack-tag:screenshottimer "Taking shot in : $sec"
 		sleep 1
 	done
@@ -61,30 +81,27 @@ countdown () {
 
 # take shots
 shotnow () {
-	cd ${dir} && maim -f png | copy_shot
-	notify_view
+	take_shot maim -f png
 }
 
 shot5 () {
 	countdown '5'
-	sleep 1 && cd ${dir} && maim -f png | copy_shot
-	notify_view
+	sleep 1
+	take_shot maim -f png
 }
 
 shot10 () {
 	countdown '10'
-	sleep 1 && cd ${dir} && maim -f png | copy_shot
-	notify_view
+	sleep 1
+	take_shot maim -f png
 }
 
 shotwin () {
-	cd ${dir} && maim -f png -i `xdotool getactivewindow` | copy_shot
-	notify_view
+	take_shot maim -f png -i "$(active_window)"
 }
 
 shotarea () {
-	cd ${dir} && maim -f png -s -b 2 -c ${border},0.25 -l | copy_shot
-	notify_view
+	take_shot maim -f png -s -b 2 -c "${border},0.25" -l
 }
 
 ## Rofi
@@ -98,7 +115,7 @@ rofi_cmd() {
 	rofi -dmenu \
 		-mesg "$mesg" \
 		-markup-rows \
-		-theme ${RASI} -p " Screenshot"
+		-theme "${RASI}" -p " Screenshot"
 }
 
 run_rofi() {
@@ -122,20 +139,20 @@ run_cmd() {
 
 showRofi () {
 	chosen="$(run_rofi)"
-	case ${chosen} in
-		$option_1)
+	case "$chosen" in
+		"$option_1")
 			run_cmd --opt1
 			;;
-		$option_2)
+		"$option_2")
 			run_cmd --opt2
 			;;
-		$option_3)
+		"$option_3")
 			run_cmd --opt3
 			;;
-		$option_4)
+		"$option_4")
 			run_cmd --opt4
 			;;
-		$option_5)
+		"$option_5")
 			run_cmd --opt5
 			;;
 	esac

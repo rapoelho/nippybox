@@ -17,14 +17,12 @@ option_3=" Music (Win + F3)"
 option_4=" Shot (Win + F4)"
 option_5="󰞅  Emoji (Win + F5)"
 option_6="  Clippy (Win + F6)"
-#~ option_7="󰴱  Color Picker (Win + F7)"
 option_8="󰸉  Wallpapers (Win + F8)"
-#~ option_9="  Keybinds "
 option_10="󰐥  Powermenu (Win + F11)"
 
 # Rofi CMD
 rofi_cmd() {
-	rofi -dmenu -i -theme $RASI -p "󰕲  ROAR - Rofi Of All Rofi"
+	rofi -dmenu -i -theme "$RASI" -p "󰕲  ROAR - Rofi Of All Rofi"
 }
 
 # Pass variables to rofi dmenu
@@ -48,17 +46,13 @@ run_cmd() {
 	elif [[ "$1" == '--opt3' ]]; then
 		rofi-music
 	elif [[ "$1" == '--opt4' ]]; then
-		rofi-screenshot
+		nippy-shot --rofi
 	elif [[ "$1" == '--opt5' ]]; then
 		rofi-emoji
 	elif [[ "$1" == '--opt6' ]]; then
 		nippy-clippy rofi
-	elif [[ "$1" == '--opt7' ]]; then
-		nippy-colorpicker rofi
 	elif [[ "$1" == '--opt8' ]]; then
 		rofi-wal
-	elif [[ "$1" == '--opt9' ]]; then
-		rofi-launcher keys
 	elif [[ "$1" == '--opt10' ]]; then
 		rofi-powermenu
 	fi
@@ -66,35 +60,31 @@ run_cmd() {
 
 # Actions
 chosen="$(run_rofi)"
-case ${chosen} in
-    $option_1)
-		run_cmd --opt1
-        ;;
-    $option_2)
-		run_cmd --opt2
-        ;;
-    $option_3)
-		run_cmd --opt3
-        ;;
-    $option_4)
-		run_cmd --opt4
-        ;;
-    $option_5)
-		run_cmd --opt5
-        ;;
-    $option_6)
-		run_cmd --opt6
-        ;;
-    $option_7)
-		run_cmd --opt7
-		;;
-    $option_8)
-		run_cmd --opt8
-		;;
-	$option_9)
-		run_cmd --opt9
-		;;
-	$option_10)
-		run_cmd --opt10
-		;;
-esac
+if [[ -n "$chosen" ]]; then
+	case "$chosen" in
+		"$option_1")
+			run_cmd --opt1
+			;;
+		"$option_2")
+			run_cmd --opt2
+			;;
+		"$option_3")
+			run_cmd --opt3
+			;;
+		"$option_4")
+			run_cmd --opt4
+			;;
+		"$option_5")
+			run_cmd --opt5
+			;;
+		"$option_6")
+			run_cmd --opt6
+			;;
+		"$option_8")
+			run_cmd --opt8
+			;;
+		"$option_10")
+			run_cmd --opt10
+			;;
+	esac
+fi

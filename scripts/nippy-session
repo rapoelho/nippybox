@@ -2,16 +2,17 @@
 
 configFile="$HOME/.config/nippybox/config"
 
-if ! [ -e "$configFile" ]; then
+if [ ! -e "$configFile" ]; then
 	echo "[WARNING] Configuration File Not Found!"
-	exit
+	exit 1
 else
 	echo "[CONFiG] Loading Configuration File..."
+	# shellcheck source=/dev/null
 	source "$configFile"
 fi
 
-if ! [ -z "$lefthanded" ]; then
-	if [[ $lefthanded == "true" ]]; then
+if [ -n "$lefthanded" ]; then
+	if [[ "$lefthanded" == "true" ]]; then
 		echo "[MOUSE] Left-handed mode enabled"
 		xmodmap -e "pointer = 3 2 1"
 	else
@@ -20,14 +21,16 @@ if ! [ -z "$lefthanded" ]; then
 	fi
 fi
 
-if ! [ -z "$variant" ]; then
-	layoutCmd="-variant $variant"
+layoutCmd=()
+msgVariant=""
+if [ -n "$variant" ]; then
+	layoutCmd=(-variant "$variant")
 	msgVariant="/$variant"
 fi
 
-if ! [ -z "$keymap" ]; then
+if [ -n "$keymap" ]; then
 	echo "[KEYBOARD] Keyboard configured in the $keymap$msgVariant keymap"
-	setxkbmap -layout $keymap ${layoutCmd}
+	setxkbmap -layout "$keymap" "${layoutCmd[@]}"
 fi
 
 

@@ -41,7 +41,7 @@ installDesktop () {
 
 	echo -e "\n## Instalando dependências dos Scripts"
 	sleep 2
-	sudo xbps-install -y maim xclip slop ffmpeg playerctl brightnessctl xcolor
+	sudo xbps-install -y maim xclip slop ffmpeg playerctl brightnessctl xcolor xprop ImageMagick betterlockscreen pulseaudio-utils
 
 	echo -e "\n ## Instalando Pipewire..."
 	sleep 2

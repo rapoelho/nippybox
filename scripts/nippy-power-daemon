@@ -1,176 +1,263 @@
-#! /bin/env python3
+#!/usr/bin/env python3
 import asyncio
 import subprocess
-import os
+
 from dbus_next.aio import MessageBus
 from dbus_next.constants import BusType
-from dbus_next.errors import InterfaceNotFoundError
 
 low_battery = 30.0
 
 percent_battery = 0.0
-status_battery = ""
 powersave_active = False
+last_state = None
+last_logged_percent = None
 
 bright_powersave = "20%"
 bright_battery = "40%"
 bright_ac = "70%"
 
-def get_uptime ():
+upower_dest = "org.freedesktop.UPower"
+upower_path = "/org/freedesktop/UPower"
+upower_prop = "org.freedesktop.DBus.Properties"
+upower_device = "org.freedesktop.UPower.Device"
+
+
+def get_uptime():
 	try:
-		with open ('/proc/uptime', 'r') as file:
-			uptime_s = float (file.readline ().split()[0])
-			uptime_h = int (uptime_s // 3600)
-			
-			uptime_d = int (uptime_h // 24)
+		with open("/proc/uptime", "r") as file:
+			uptime_s = float(file.readline().split()[0])
+			uptime_h = int(uptime_s // 3600)
+
+			uptime_d = int(uptime_h // 24)
 			uptime_h = int(uptime_h - (uptime_d * 24))
-			uptime_m = int (( uptime_s % 3600) // 60 )
-			
-			uptime = f"{uptime_d}d {uptime_h}h {uptime_m}m"
-			
-			return uptime
+			uptime_m = int((uptime_s % 3600) // 60)
+
+			return f"{uptime_d}d {uptime_h}h {uptime_m}m"
 	except Exception:
 		return "N/A"
 
-def log_event (type, event):	
-	print (f"[{get_uptime()}] [{type.upper()}] {event}")
-	
-def set_bright (bright):
-	log_event ("screen", f"Brightness: {bright}")
-	subprocess.run(["brightnessctl", "set", bright])
 
-def powersave ():
+def log_event(event_type, event):
+	print(f"[{get_uptime()}] [{event_type.upper()}] {event}")
+
+
+def log_battery_status(percentage):
+	global last_logged_percent
+
+	rounded_percent = int(round(percentage))
+
+	if rounded_percent == last_logged_percent:
+		return
+
+	last_logged_percent = rounded_percent
+	log_event("battery", f"Battery Status: {rounded_percent}%")
+
+
+def run_command(command):
+	try:
+		result = subprocess.run(command, check=False)
+	except OSError as error:
+		log_event("error", f"Failed to run {command[0]}: {error}")
+		return
+
+	if result.returncode != 0:
+		log_event("error", f"{command[0]} exited with code {result.returncode}")
+
+
+def set_bright(bright):
+	log_event("screen", f"Brightness: {bright}")
+	run_command(["brightnessctl", "set", bright])
+
+
+def disable_powersave():
 	global powersave_active
-	
-	log_event ("battery", f"Low Battery: {low_battery}")
-	subprocess.run(["notify-send", "Low Battery!"])
-	log_event ("battery" , "Powersave: ON")
-	powersave_active = True
-	set_bright (bright_powersave)
-	
-def charging ():
-	global powersave_active
-	
+
 	if powersave_active:
-		log_event ("[battery]", "Powersave: OFF")
+		log_event("battery", "Powersave: OFF")
 		powersave_active = False
-		
-	subprocess.run(["notify-send", "Charging...", "Your Battery is charging..."])
-	set_bright (bright_ac)
-	
-def full_battery ():
-	subprocess.run(["notify-send", "Battery Full", "Your Battery is fully charged"])
-	set_bright (bright_ac)
-	
-def on_battery ():
-	subprocess.run(["notify-send", "On Battery", "Your Battery is discharging..."])
-	set_bright (bright_battery)
 
-async def battery_monitor_client ():
-	## Variáveis
+
+def powersave():
 	global powersave_active
-	global status_battery
+
+	log_event("battery", f"Low Battery: {low_battery}")
+	run_command(["notify-send", "Low Battery!", "Battery is running low!"])
+	log_event("battery", "Powersave: ON")
+	powersave_active = True
+	set_bright(bright_powersave)
+
+
+def charging():
+	disable_powersave()
+	run_command(["notify-send", "Charging...", "Your Power Bridge is charging..."])
+	set_bright(bright_ac)
+
+
+def full_battery():
+	disable_powersave()
+	run_command(["notify-send", "Battery Full", "Your Power Bridge is fully charged"])
+	set_bright(bright_ac)
+
+
+def on_battery():
+	disable_powersave()
+	run_command(["notify-send", "On Battery", "Running on Power Bridge discharging..."])
+	set_bright(bright_battery)
+
+
+def on_ac_idle():
+	disable_powersave()
+	run_command(["notify-send", "On AC", "Power adapter connected"])
+	set_bright(bright_ac)
+
+
+def evaluate_state(percentage, state, on_battery_flag):
+	# UPower: 0=unknown, 1=charging, 2=discharging, 3=empty,
+	# 4=fully-charged, 5=pending-charge, 6=pending-discharge.
+	if state == 1:
+		return "charging"
+	if state == 4:
+		return "on_battery" if on_battery_flag else "full"
+	if state == 2:
+		return "powersave" if percentage <= low_battery else "on_battery"
+	if state == 3:
+		return "powersave" if on_battery_flag else "idle"
+	if on_battery_flag:
+		return "powersave" if percentage <= low_battery else "on_battery"
+	return "idle"
+
+
+def apply_state(new_state):
+	global last_state
+
+	if new_state == last_state:
+		return
+
+	last_state = new_state
+
+	if new_state == "charging":
+		charging()
+	elif new_state == "full":
+		full_battery()
+	elif new_state == "powersave":
+		powersave()
+	elif new_state == "on_battery":
+		on_battery()
+	else:
+		on_ac_idle()
+
+
+async def battery_monitor_client():
 	global percent_battery
 
-	## UPower
-	upower_dest = 'org.freedesktop.UPower'
-	upower_path = '/org/freedesktop/UPower'
-	upower_prop = 'org.freedesktop.DBus.Properties'
-	upower_device = 'org.freedesktop.UPower.Device'
-	
 	try:
-		## Conectando ao UPower
-		system_bus = await MessageBus(bus_type = BusType.SYSTEM).connect ()
-		introspect = await system_bus.introspect(upower_dest, upower_path)
-		upower_proxy = system_bus.get_proxy_object(upower_dest, upower_path, introspect)
-		upower_interface = upower_proxy.get_interface(upower_dest)
-		
-		## Começando a Listar as Baterias
+		system_bus = await MessageBus(bus_type=BusType.SYSTEM).connect()
+
+		root_introspect = await system_bus.introspect(upower_dest, upower_path)
+		root_proxy = system_bus.get_proxy_object(upower_dest, upower_path, root_introspect)
+		upower_interface = root_proxy.get_interface(upower_dest)
+		root_properties = root_proxy.get_interface(upower_prop)
+
 		devices = await upower_interface.call_enumerate_devices()
-		battery_path = None
-		
-		for path in devices:
-			if 'battery' in path or 'display_device' in path:
-				battery_path = path
-				log_event ("daemon", f"Found Device: {path}")
-				break
-		if not battery_path:
-			log_event("warning", "No Battery Found!")
-			return
-		
-		## Começando a Monitorar a Bateria
-		log_event ("daemon", "Monitoring Battery")
-		
-		## Criando a Interface com a Bateria
-		bat_intropect = await system_bus.introspect(upower_dest, battery_path)
-		bat_proxy = system_bus.get_proxy_object (upower_dest, battery_path, bat_intropect)
-		
+		battery_paths = [path for path in devices if "battery" in path]
+
+		# Sem bateria (ex.: desktop), mantém o processo vivo e tenta de novo.
+		while not battery_paths:
+			log_event("warning", "No Battery Found! Retrying in 300s")
+			await asyncio.sleep(300)
+			try:
+				devices = await upower_interface.call_enumerate_devices()
+			except Exception as error:
+				log_event("error", f"Failed to enumerate devices: {error}")
+				continue
+			battery_paths = [path for path in devices if "battery" in path]
+
+		for path in battery_paths:
+			log_event("daemon", f"Found Battery: {path}")
+
+		battery_properties = {}
+		for path in battery_paths:
+			try:
+				battery_introspect = await system_bus.introspect(upower_dest, path)
+				battery_proxy = system_bus.get_proxy_object(
+					upower_dest, path, battery_introspect
+				)
+				battery_properties[path] = battery_proxy.get_interface(upower_prop)
+			except Exception as error:
+				log_event("error", f"Failed to monitor {path}: {error}")
+
 		try:
-			upower_properties = bat_proxy.get_interface (upower_prop)
-		except InterfaceNotFoundError:
-			upower_properties = bat_proxy.get_interface (upower_device)
-		
-		## Pegando o Estado Inicial
-		try:
-			init_percentage_var = await upower_properties.call_get(upower_device, 'Percentage')
-			percent_battery = init_percentage_var.value
-			
-			init_status_var = await upower_properties.call_get(upower_device, 'State')
-			init_status = init_status_var.value
-			
-			if init_status == 1:
-				status_battery = "Charging - On AC"
-				charging ()
-			elif init_status == 3:
-				status_battery = "Battery Full - On AC"
-				full_battery ()
-			elif init_status == 2 and percent_battery <= low_battery:
-				status_battery = "Discharging - On Battery"
-				powersave ()
-			else:
-				status_battery = "Discharging - On Battery"
-				on_battery ()
-		
-			log_event ("Battery", f"Battery Status: {percent_battery}% ({status_battery})")
-			
-		except Exception as e:
-			print (f"[ERROR] {e}")
-		
-		## Monitoramento da Bateria
-		def prop_changed (interface_name, change_prop, invalid_prop):
-			global powersave_active
-			global status_battery
+			device_path = await upower_interface.call_get_display_device()
+		except Exception:
+			device_path = battery_paths[0]
+
+		log_event("daemon", f"Monitoring Device: {device_path}")
+
+		device_introspect = await system_bus.introspect(upower_dest, device_path)
+		device_proxy = system_bus.get_proxy_object(upower_dest, device_path, device_introspect)
+		device_properties = device_proxy.get_interface(upower_prop)
+
+		refresh_lock = asyncio.Lock()
+
+		async def refresh_state():
 			global percent_battery
-			
-			if 'Percentage' in change_prop:
-				percent_battery = change_prop['Percentage'].value
-				log_event ("battery", f"Battery Status: {percent_battery}%")
-				
-				if percent_battery <= low_battery and not powersave_active and not status_battery == 1:
-					powersave ()
-			
-			if 'State' in change_prop:
-				now_status = change_prop['State'].value
-				
-				if now_status == 1:
-					status_battery = "AC Plugged"
-					charging ()
-				elif now_status == 3 or percent_battery == 100:
-					status_battery = "Battery Full"
-					full_battery ()
-				else:
-					status_battery = "On Battery"
-					
-					if percent_battery <= low_battery:
-						powersave ()
-					else:
-						on_battery ()
-					
-				log_event ("battery", f"Power Adapter: {status_battery}")
-					
-		upower_properties.on_properties_changed(prop_changed)
+
+			async with refresh_lock:
+				try:
+					properties = await device_properties.call_get_all(upower_device)
+					values = {name: variant.value for name, variant in properties.items()}
+
+					percentage = values.get("Percentage")
+					if percentage is None:
+						energy = values.get("Energy")
+						energy_full = values.get("EnergyFull")
+						if energy is not None and energy_full:
+							percentage = (float(energy) / float(energy_full)) * 100
+						else:
+							percentage = percent_battery
+
+					percent_battery = max(0.0, min(100.0, float(percentage)))
+					state = int(values.get("State", 0))
+
+					try:
+						on_battery_variant = await root_properties.call_get(
+							upower_dest, "OnBattery"
+						)
+						on_battery_flag = bool(on_battery_variant.value)
+					except Exception:
+						on_battery_flag = state in (2, 3)
+
+					log_battery_status(percent_battery)
+					apply_state(evaluate_state(percent_battery, state, on_battery_flag))
+				except Exception as error:
+					log_event("error", f"Failed to read battery state: {error}")
+
+		def device_prop_changed(interface_name, changed_prop, invalid_prop):
+			if interface_name != upower_device:
+				return
+			if any(
+				name in changed_prop or name in invalid_prop
+				for name in ("Percentage", "State", "Energy", "EnergyFull")
+			):
+				asyncio.get_running_loop().create_task(refresh_state())
+
+		def root_prop_changed(interface_name, changed_prop, invalid_prop):
+			if interface_name != upower_dest:
+				return
+			if "OnBattery" in changed_prop or "OnBattery" in invalid_prop:
+				asyncio.get_running_loop().create_task(refresh_state())
+
+		for path, properties in battery_properties.items():
+			if path != device_path:
+				properties.on_properties_changed(device_prop_changed)
+		device_properties.on_properties_changed(device_prop_changed)
+		root_properties.on_properties_changed(root_prop_changed)
+
+		await refresh_state()
 		await asyncio.get_running_loop().create_future()
-	except Exception as e:
-			print (f"[ERROR] {e}")
+	except Exception as error:
+		log_event("error", f"Daemon error: {error}")
+
+
 if __name__ == "__main__":
 	asyncio.run(battery_monitor_client())

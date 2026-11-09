@@ -61,7 +61,7 @@ scan_on() {
 # Toggles scanning state
 toggle_scan() {
     if scan_on; then
-        kill $(pgrep -f "bluetoothctl scan on")
+        pkill -f "bluetoothctl scan on" 2>/dev/null || true
         bluetoothctl scan off
         show_menu
     else
@@ -191,7 +191,8 @@ print_status() {
 
         paired_devices_cmd="devices Paired"
         # Check if an outdated version of bluetoothctl is used to preserve backwards compatibility
-        if (( $(echo "$(bluetoothctl version | cut -d ' ' -f 2) < 5.65" | bc -l) )); then
+        bt_version=$(bluetoothctl version 2>/dev/null | cut -d ' ' -f 2)
+        if [[ -n "$bt_version" ]] && [[ "$(printf '%s\n%s\n' "5.65" "$bt_version" | sort -V | head -n 1)" != "5.65" ]]; then
             paired_devices_cmd="paired-devices"
         fi
 
@@ -301,7 +302,7 @@ show_menu() {
             toggle_pairable
             ;;
         *)
-            device=$(bluetoothctl devices | grep "$chosen")
+            device=$(bluetoothctl devices | grep -F -- "$chosen")
             # Open a submenu if a device is selected
             if [[ $device ]]; then device_menu "$device"; fi
             ;;

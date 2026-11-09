@@ -9,9 +9,6 @@ wall_colorizer () {
 ## Set wallpaper ------------------------------
 set_wallpaper() {	
 	feh --bg-fill "$@"
-	
-	dconf write /org/gnome/desktop/background/picture-uri "'file://$@'"
-	dconf write /org/gnome/desktop/background/picture-uri-dark "'file://$@1'"
 
 	magick "$@" -resize 1000x1000^ -define crop:smart-crop=true -crop 800x800+0+0 +repage -quality 00 "$HOME/.config/rofi/shared/wallpaper.png"
 }
@@ -29,6 +26,15 @@ elif [[ "$1" == '--wallpaper' ]]; then
 elif [[ "$1" == '--lockscreen' ]]; then
 	set_lockscreen "$2"
 elif [[ "$1" == '--restore' ]]; then
-	source $HOME/.config/nippybox/config
-	feh --bg-scale "$wallpaper"
+	wallpaper=""
+	if [ -f "$HOME/.config/nippybox/config" ]; then
+		# shellcheck source=/dev/null
+		source "$HOME/.config/nippybox/config"
+	fi
+	if [ -n "$wallpaper" ] && [ -f "$wallpaper" ]; then
+		feh --bg-fill "$wallpaper"
+	elif [ -f "$HOME/.fehbg" ]; then
+		# Se o wallpaper do config não existir, usa o último wallpaper salvo pelo feh
+		sh "$HOME/.fehbg"
+	fi
 fi

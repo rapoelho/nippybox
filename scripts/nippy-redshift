@@ -3,6 +3,7 @@
 pipe () {
 	MENUS_LIBDIR="$HOME/.config/openbox/"
 	
+	# shellcheck source=/dev/null
 	if ! . "$MENUS_LIBDIR/pipebase.cfg" 2> /dev/null; then
 		echo $"Error: Failed to locate pipebase.cfg in $MENUS_LIBDIR" >&2
 		exit 1
@@ -29,30 +30,32 @@ pipe () {
 }
 
 pauseRedshift () {
-	minutes=$1
+	if ! [[ "$1" =~ ^[0-9]+$ ]] || [ "$1" -le 0 ]; then
+		echo "Uso: $0 --pause <minutos>" >&2
+		return 1
+	fi
+
+	minutes=$((10#$1))
 	pauseTime=$((60 * minutes))
 	
 	pauseStart=$(date +%s)
-	pauseEnd=$(( $pauseTime + $pauseStart ))
+	pauseEnd=$(( pauseTime + pauseStart ))
 	
-	dunstify -u low "Redshift paused until `date -d"@$pauseEnd" +"%H:%M:%S"`"
+	dunstify -u low "Redshift paused until $(date -d "@$pauseEnd" +"%H:%M:%S")"
 	stopRedshift
-	sleep $pauseTime
+	sleep "$pauseTime"
 	startRedshift
 	dunstify -u low "Redshift resumed"
 
 }
 
 geoLocate () {
-	if loc=$(curl -sf https://ipinfo.io/json); then ## Usando o argumento -sf para silenciar o curl e repassar o status de falha ao if
+	if loc=$(curl -sf https://ipinfo.io/loc); then ## Usando o argumento -sf para silenciar o curl e repassar o status de falha ao if
 		echo "## Connection OK"
 		echo "## Detecting Latitude and Longitude..."
 
 	## Usando o read para ler a Latitude e Longitude...
-		IFS=, read lat lon <<EOF
-		$(printf '%s' "$loc"| awk -F'"' '/loc/ { print $4 }')
-EOF
-	## ^ Usando o printf para exibir a saída e usando o awk para detectar padrões
+		IFS=, read -r lat lon <<< "$loc"
 
 	else
 		## Se a conexão falhar, usar as coordenadas padrão
@@ -73,7 +76,7 @@ stopRedshift () {
 startRedshift () {
 	geoLocate
 	echo -e "\n## Starting Redshift..."
-	exec redshift -l "$lat:$lon"
+	redshift -l "$lat:$lon" &
 }
 
 infoRedshift() {
@@ -93,7 +96,7 @@ elif [[ "$1" == "--pipe" ]]; then
 elif [[ "$1" == "--stop" ]]; then
 	stopRedshift
 elif [[ "$1" == "--pause" ]]; then
-	pauseRedshift $2
+	pauseRedshift "$2"
 else
 	startRedshift
 fi

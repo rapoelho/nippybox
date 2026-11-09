@@ -5,7 +5,7 @@ passRASI="$HOME/.config/rofi/askpass.rasi"
 
 #~ notify-send "Getting list of available Wi-Fi networks..."
 # Get a list of available wifi connections and morph it into a nice-looking list
-wifi_list=$(nmcli --fields "SECURITY,SSID" device wifi list --rescan no| sed 1d | sed 's/  */ /g' | sed -E "s/WPA*.?\S/ /g" | sed "s/^--/ /g" | sed "s/  //g" | sed "/--/d")
+wifi_list=$(nmcli --fields "SECURITY,SSID" device wifi list --rescan no | sed 1d | sed 's/  */ /g' | sed -E "s/^((WPA|WEP|802\.1X)[^ ]* )+/ /" | sed "s/^-- / /")
 
 connected=$(nmcli -fields WIFI g)
 if [[ "$connected" =~ "enabled" ]]; then
@@ -14,12 +14,12 @@ elif [[ "$connected" =~ "disabled" ]]; then
 	toggle="󰖩  Enable Wi-Fi"
 fi
 
-connectWiFi="$(iwgetid -r)"
+connectWiFi="$(nmcli -t -f ACTIVE,SSID dev wifi | sed -n 's/^yes://p' | head -n1 | sed 's/\\:/:/g')"
 
 # Use rofi to select wifi network
-chosen_network=$(echo -e "$toggle\n$wifi_list" | uniq -u | rofi -dmenu -theme $RASI -i -selected-row 1 -p "  Wifi" -mesg "Wi-Fi SSID: $connectWiFi " )
+chosen_network=$(printf '%s\n%s\n' "$toggle" "$wifi_list" | awk '!seen[$0]++' | rofi -dmenu -theme "$RASI" -i -selected-row 1 -p "  Wifi" -mesg "Wi-Fi SSID: $connectWiFi " )
 # Get name of connection
-read -r chosen_id <<< "${chosen_network:3}"
+read -r chosen_id <<< "${chosen_network#* }"
 
 if [ "$chosen_network" = "" ]; then
 	exit
@@ -32,12 +32,15 @@ else
   	success_message="You are now connected to the Wi-Fi network \"$chosen_id\"."
 	# Get saved connections
 	saved_connections=$(nmcli -g NAME connection)
-	if [[ $(echo "$saved_connections" | grep -w "$chosen_id") = "$chosen_id" ]]; then
-		nmcli connection up id "$chosen_id" | grep "successfully" && notify-send "Connection Established" "$success_message"
+	if echo "$saved_connections" | grep -Fxq "$chosen_id"; then
+		nmcli connection up id "$chosen_id" | grep -q "successfully" && notify-send "Connection Established" "$success_message"
 	else
-		if [[ "$chosen_network" =~ "" ]]; then
-			wifi_password=$(rofi -dmenu -theme $passRASI)
+		if [[ "$chosen_network" == *""* ]]; then
+			wifi_password=$(rofi -dmenu -theme "$passRASI" -password)
+			[[ -z "$wifi_password" ]] && exit
+			nmcli device wifi connect "$chosen_id" password "$wifi_password" | grep -q "successfully" && notify-send "Connection Established" "$success_message"
+		else
+			nmcli device wifi connect "$chosen_id" | grep -q "successfully" && notify-send "Connection Established" "$success_message"
 		fi
-		nmcli device wifi connect "$chosen_id" password "$wifi_password" | grep "successfully" && notify-send "Connection Established" "$success_message"
     fi
 fi

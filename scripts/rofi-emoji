@@ -14,16 +14,28 @@ prepareDB() {
         mkdir -p "$dbLocation"
     fi
 
-	if ! [[ -f "$dbLocation/emojis.txt" ]]; then
-		emojis=$(curl -sSL "https://unicode.org/Public/emoji/latest/emoji-test.txt")
-		printf "%s" "$emojis" | sed -ne 's/^.*; fully-qualified.*# \(\S*\) \S* \(.*$\)/\1 \2/gp' >"$dbLocation/emojis.txt"
-		echo "Downloaded default emoji set."
+	if ! [[ -s "$dbLocation/emojis.txt" ]]; then
+		tmpFile=$(mktemp)
+		if curl -fsSL "https://unicode.org/Public/emoji/latest/emoji-test.txt" -o "$tmpFile"; then
+			sed -ne 's/^.*; fully-qualified.*# \(\S*\) \S* \(.*$\)/\1 \2/gp' "$tmpFile" >"$dbLocation/emojis.txt.tmp"
+			if [ -s "$dbLocation/emojis.txt.tmp" ]; then
+				mv "$dbLocation/emojis.txt.tmp" "$dbLocation/emojis.txt"
+				echo "Downloaded default emoji set."
+			else
+				rm -f "$dbLocation/emojis.txt.tmp"
+				echo "Failed to parse emoji set." >&2
+			fi
+		else
+			echo "Failed to download emoji set." >&2
+		fi
+		rm -f "$tmpFile"
 	fi
 }		
 
 prepareList() {
     local result
-    result=$(cat "$dbLocation"/emojis.txt)
+    result=""
+    [ -f "$dbLocation/emojis.txt" ] && result=$(cat "$dbLocation"/emojis.txt)
     
     if [ -n "$limitRecent" ] && [ "$limitRecent" -eq 0 ]; then
         printf "%s" "$result"
@@ -37,6 +49,9 @@ getRecent() {
     local limit=${1}
     local recent_file="$historyFile"
     
+    if [ ! -d "$stateDir" ]; then
+        mkdir -p "$stateDir"
+    fi
     if [ ! -f "$recent_file" ]; then
         touch "$recent_file"
     fi
@@ -66,8 +81,7 @@ addRecent() {
 }
 
 prepareDB
-result=$(prepareList | rofi -i -dmenu -theme $RASI --kb-custom-1 "Alt+1" --kb-custom-2 "Alt+2" -p "󰞅  Emoji")
-exit_value="$?"
+result=$(prepareList | rofi -i -dmenu -theme "$RASI" -p "󰞅  Emoji")
 addRecent "$result"
 result=$(echo "$result" | grep -o '^\S\+' | tr -d '\n')
 

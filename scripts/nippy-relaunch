@@ -11,11 +11,11 @@ rPlank () {
 }
 
 rWal () {
-	nitrogen --restore
+	nippy-wal --restore
 }
 
 rCompositor () {
-	nippy-compositor start
+	nohup nippy-compositor start >/dev/null 2>&1 &
 }
 
 if [[ "$1" == "polybar" ]]; then

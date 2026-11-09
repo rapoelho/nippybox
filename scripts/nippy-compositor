@@ -1,5 +1,14 @@
-#! /bin/bash
-source "$HOME/.config/nippybox/config"
+#!/bin/bash
+
+configFile="$HOME/.config/nippybox/config"
+
+if [ ! -e "$configFile" ]; then
+	echo "[WARNING] Configuration File Not Found!" >&2
+	exit 1
+fi
+
+# shellcheck source=/dev/null
+source "$configFile"
 
 killCompositor () {
 	if [[ $(pidof picom) ]]; then
@@ -13,10 +22,10 @@ killCompositor () {
 
 setCompositor () {
 	if [[ "$1" == "simple" ]]; then
-		sed -i 's|^compositor=.*|compositor=xcompmgr|' $HOME/.config/nippybox/config
+		sed -i 's|^compositor=.*|compositor=xcompmgr|' "$configFile"
 		runCompositor simple
 	elif [[ "$1" == "default" ]]; then
-		sed -i 's|^compositor=.*|compositor=picom|' $HOME/.config/nippybox/config
+		sed -i 's|^compositor=.*|compositor=picom|' "$configFile"
 		runCompositor default
 	else
 		echo "ERROR: Invalid Compositor"
@@ -51,7 +60,7 @@ pipemenu () {
 	source "$HOME/.config/nippybox/config"
 
 	if ! . "$MENUS_LIBDIR/pipebase.cfg" 2> /dev/null; then
-		echo $"Error: Failed to locate pipebase.cfg in $MENUS_LIBDIR" >&2
+		echo "Error: Failed to locate pipebase.cfg in $MENUS_LIBDIR" >&2
 		exit 1
 	fi
 	
@@ -81,11 +90,11 @@ pipemenu () {
 
 
 if [[ "$1" == "set" ]]; then
-	setCompositor $2
+	setCompositor "$2"
 elif [[ "$1" == "info" ]]; then
 	echo -e "## Compositor in use: $compositor"
 elif [[ "$1" == "run" ]]; then
-	runCompositor $2
+	runCompositor "$2"
 elif [[ "$1" == "start" ]]; then
 	startCompositor
 elif [[ "$1" == "stop" ]]; then

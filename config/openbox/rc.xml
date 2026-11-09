@@ -657,7 +657,7 @@
     </keybind>
     <keybind key="W-s">
       <action name="Execute">
-        <command>rofi-screenshot</command>
+        <command>nippy-shot --rofi</command>
       </action>
     </keybind>
     <keybind key="A-F2">

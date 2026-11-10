@@ -15,7 +15,7 @@ current_settings = {}
 def check_and_log_changes():
     global current_settings
     new_settings = get_clean_settings()
-    if not new_settings and not current_settings: 
+    if not new_settings:
         return
 
     if not current_settings:
@@ -30,6 +30,10 @@ def check_and_log_changes():
             print(f"[ALTERAÇÃO] {k}: -> '{v}'", flush=True)
             changes_detected = True
 
+    for k in set(current_settings) - set(new_settings):
+        print(f"[ALTERAÇÃO] {k}: removida", flush=True)
+        changes_detected = True
+
     if changes_detected:
         current_settings = new_settings
         save_and_sync(new_settings)
@@ -37,7 +41,7 @@ def check_and_log_changes():
 def listen_for_commands():
     if os.path.exists(PIPE_FILE): 
         os.remove(PIPE_FILE)
-    os.mkfifo(PIPE_FILE)
+    os.mkfifo(PIPE_FILE, 0o600)
     
     print(f"[INFO] Escuta de controle ativa em: {PIPE_FILE}", flush=True)
     
@@ -82,7 +86,9 @@ def main():
 
     # Inicializa o barramento estético e o hardware salvo no boot
     if os.path.exists(XSETTINGSD_CONF):
-        subprocess.Popen(["xsettingsd"], stdout=subprocess.DEVNULL)
+        res = subprocess.run(["pidof", "xsettingsd"], stdout=subprocess.DEVNULL)
+        if res.returncode != 0:
+            subprocess.Popen(["xsettingsd"], stdout=subprocess.DEVNULL)
     apply_mouse_settings()
 
     # Dispara a thread de controle remoto do pipe

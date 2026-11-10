@@ -3,19 +3,46 @@
 # Caminho do Named Pipe utilizado pelo daemon
 PIPE_FILE="$HOME/.config/xsettings-control"
 
+# Tempo máximo (em segundos) para enviar o comando ao daemon
+PIPE_TIMEOUT=5
+
 # Função para exibir instruções de uso
 exibir_ajuda() {
-    echo "Usage: xset-change [Key] [Value]"
-    echo "Exemples:"
-    echo "  xset-change Gtk/ThemeName Arc-Dark"
-    echo "  xset-change Gtk/IconThemeName Papirus-Dark"
-    echo "  xset-change Gtk/FontName 'Sans 11'"
-    exit 1
+    printf 'Usage: nippy-settings-set [Key] [Value]\n'
+    printf '\n'
+    printf 'Peripherals (applied immediately and saved in ~/.config/peripherals-current.txt):\n'
+    printf '  mouse/left_handed      true|false   (also updates lefthanded in the Nippybox config)\n'
+    printf '  mouse/touchpad_tap     true|false   (libinput, with Synaptics fallback)\n'
+    printf '  keyboard/repeat        DELAY RATE   (e.g.: 250 50)\n'
+    printf '  Booleans also accept on/off, 1/0, yes/no.\n'
+    printf '\n'
+    printf 'XSettings (GTK/Openbox; forwarded to xsettingsd):\n'
+    printf '  Gtk/ThemeName          Theme name        (also sets Net/ThemeName)\n'
+    printf '  Gtk/IconThemeName      Icon theme name   (also sets Net/IconThemeName)\n'
+    printf '  Gtk/FontName           Font and size     (e.g.: "Sans 11")\n'
+    printf '  Gtk/IconTheme          Legacy icon theme name\n'
+    printf '  Net/ThemeName          Mirror of Gtk/ThemeName\n'
+    printf '  Net/IconThemeName      Mirror of Gtk/IconThemeName\n'
+    printf '  Any other valid XSettings key is forwarded as-is.\n'
+    printf '\n'
+    printf 'Examples:\n'
+    printf '  nippy-settings-set Gtk/ThemeName Arc-Dark\n'
+    printf "  nippy-settings-set Gtk/FontName 'Sans 11'\n"
+    printf '  nippy-settings-set mouse/left_handed true\n'
+    printf '  nippy-settings-set keyboard/repeat 250 50\n'
+    exit "${1:-1}"
 }
+
+# Ajuda explícita não é erro
+case "$1" in
+    -h|--help)
+        exibir_ajuda 0
+        ;;
+esac
 
 # Verifica se os dois argumentos obrigatórios foram passados
 if [ $# -lt 2 ]; then
-    echo "[ERROr] Insufficient arguments."
+    printf '[ERROR] Insufficient arguments.\n' >&2
     exibir_ajuda
 fi
 
@@ -26,13 +53,17 @@ VALOR="$*"
 
 # Verifica se o Named Pipe do daemon existe (garante que o daemon está rodando)
 if [ ! -p "$PIPE_FILE" ]; then
-    echo "[ERRO] The nippy-settings-daemon does not appear to be running."
-    #~ echo "Certifique-se de que o Pipe existe em: $PIPE_FILE"
+    printf '[ERROR] The nippy-settings-daemon does not appear to be running.\n' >&2
     exit 1
 fi
 
-# Envia a configuração formatada para o Named Pipe do daemon
-echo "$CHAVE $VALOR" > "$PIPE_FILE"
+# Envia a configuração formatada para o Named Pipe do daemon.
+# O timeout evita travar se o FIFO existir, mas o daemon tiver morrido.
+# As aspas simples são intencionais: os valores são passados como posicionais.
+# shellcheck disable=SC2016
+if ! timeout "$PIPE_TIMEOUT" sh -c 'printf "%s %s\n" "$1" "$2" > "$3"' sh "$CHAVE" "$VALOR" "$PIPE_FILE"; then
+    printf '[ERROR] Failed to send the command to the daemon.\n' >&2
+    exit 1
+fi
 
-echo "[OK] Sent to the daemon -> $CHAVE: $VALOR"
-
+printf '[OK] Sent to the daemon -> %s: %s\n' "$CHAVE" "$VALOR"

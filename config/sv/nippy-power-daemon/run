@@ -1,9 +1,24 @@
 #!/bin/sh
 exec 2>&1
 
-export PATH="$HOME/.local/bin:$PATH"
+# Usuário dono da sessão gráfica. O install.sh substitui estes valores.
+USER_NAME="rapoelho"
+USER_HOME="/home/rapoelho"
 
+USER_ID="$(id -u "$USER_NAME")"
+
+# Espera a sessão do usuário (D-Bus e X) ficar disponível depois do boot
+while [ ! -S "/run/user/$USER_ID/bus" ] || [ ! -S "/tmp/.X11-unix/X0" ]; do
+	sleep 5
+done
+
+export HOME="$USER_HOME"
+export PATH="$USER_HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"
+export XDG_RUNTIME_DIR="/run/user/$USER_ID"
+export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
 export DISPLAY=:0
-export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
 
-exec nippy-power-daemon
+# Mantém os grupos do usuário (video/audio) para o brightnessctl
+USER_GROUPS="$(id -Gn "$USER_NAME" | tr ' ' ':')"
+
+exec chpst -u "$USER_NAME:$USER_GROUPS" nippy-power-daemon

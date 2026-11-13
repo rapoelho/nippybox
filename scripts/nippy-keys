@@ -8,7 +8,7 @@ volume () {
 
     # Get Volume
     get_volume() {
-        echo "`pulsemixer --get-volume | cut -d' ' -f1`"
+        pulsemixer --get-volume | cut -d' ' -f1
     }
 
     # Notify
@@ -18,19 +18,19 @@ volume () {
 
     # Increase Volume
     inc_volume() {
-        [[ `pulsemixer --get-mute` == 1 ]] && pulsemixer --unmute
+        [[ $(pulsemixer --get-mute) == 1 ]] && pulsemixer --unmute
         pulsemixer --max-volume 100 --change-volume +5 && notify_user
     }
 
     # Decrease Volume
     dec_volume() {
-        [[ `pulsemixer --get-mute` == 1 ]] && pulsemixer --unmute
+        [[ $(pulsemixer --get-mute) == 1 ]] && pulsemixer --unmute
         pulsemixer --max-volume 100 --change-volume -5 && notify_user
     }
 
     # Toggle Mute
     toggle_mute() {
-        if [[ `pulsemixer --get-mute` == 0 ]]; then
+        if [[ $(pulsemixer --get-mute) == 0 ]]; then
             pulsemixer --toggle-mute && ${notify_cmd} "Mute"
         else
             pulsemixer --toggle-mute && ${notify_cmd} "Unmute"
@@ -39,8 +39,8 @@ volume () {
 
     # Toggle Mic
     toggle_mic() {
-        ID="`pulsemixer --list-sources | grep 'Default' | cut -d',' -f1 | cut -d' ' -f3`"
-        if [[ `pulsemixer --id "$ID" --get-mute` == 0 ]]; then
+        ID="$(pulsemixer --list-sources | grep 'Default' | cut -d',' -f1 | cut -d' ' -f3)"
+        if [[ $(pulsemixer --id "$ID" --get-mute) == 0 ]]; then
             pulsemixer --id "$ID" --toggle-mute && ${notify_cmd} "Microphone Switched OFF"
         else
             pulsemixer --id "$ID" --toggle-mute && ${notify_cmd} "Microphone Switched ON"
@@ -60,7 +60,7 @@ volume () {
         elif [[ "$1" == "--toggle-mic" ]]; then
             toggle_mic
         else
-            echo $(get_volume)%
+            echo "$(get_volume)%"
         fi
     else
         ${notify_cmd} "'pulsemixer' is not installed."

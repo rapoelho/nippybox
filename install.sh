@@ -1,4 +1,4 @@
-#! /bin/env bash
+#!/usr/bin/env bash
 set -e
 
 LightDMBack="Autumn Countryside Landscape.png"
@@ -6,8 +6,10 @@ LightDMBack="Autumn Countryside Landscape.png"
 if [[ "$1" == "chroot" ]]; then
 	echo "## Chroot: YES"
 	svFolder="/etc/runit/runsvdir/default"
+	chrootMode="yes"
 else
 	svFolder="/var/service"
+	chrootMode="no"
 fi
 
 checkFolders () {
@@ -113,7 +115,12 @@ installFonts () {
 
 copyConfigs () {
 	echo -e "## Copiando as Configurações..."
-	cp -r config/* $HOME/.config/
+	# config/sv é instalado em /etc/sv pelo enablePowerDaemon
+	for configDir in config/*; do
+		if [ "$(basename "$configDir")" != "sv" ]; then
+			cp -r "$configDir" "$HOME/.config/"
+		fi
+	done
 	
 	for file in $(ls -A home | grep '^\.'); do
 		cp -r home/$file $HOME/
@@ -165,6 +172,19 @@ enableServices () {
 	sudo ln -s /etc/sv/lightdm $svFolder/
 }
 
+enablePowerDaemon () {
+	if [[ "$chrootMode" == "yes" ]]; then
+		return
+	fi
+
+	echo "## Ativando o Nippy Power Daemon"
+	sudo mkdir -p /etc/sv/nippy-power-daemon
+	sudo cp config/sv/nippy-power-daemon/run /etc/sv/nippy-power-daemon/run
+	sudo sed -i "s|^USER_NAME=.*|USER_NAME=\"$(id -un)\"|; s|^USER_HOME=.*|USER_HOME=\"$HOME\"|" /etc/sv/nippy-power-daemon/run
+	sudo chmod +x /etc/sv/nippy-power-daemon/run
+	sudo ln -sf /etc/sv/nippy-power-daemon "$svFolder/"
+}
+
 finalConfigs () {
 	echo "## Adicionando os Usuários aos Grupos Necessários..."
 	for u in $(awk -F: '$3 >= 1000 && $3 < 65534 {print $1}' /etc/passwd); do 
@@ -209,4 +229,5 @@ enableServices
 installTLP
 
 copyConfigs
+enablePowerDaemon
 finalConfigs

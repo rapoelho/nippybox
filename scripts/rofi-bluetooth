@@ -189,14 +189,14 @@ print_status() {
     if power_on; then
         printf '󰂯'
 
-        paired_devices_cmd="devices Paired"
+        paired_devices_cmd=(devices Paired)
         # Check if an outdated version of bluetoothctl is used to preserve backwards compatibility
         bt_version=$(bluetoothctl version 2>/dev/null | cut -d ' ' -f 2)
         if [[ -n "$bt_version" ]] && [[ "$(printf '%s\n%s\n' "5.65" "$bt_version" | sort -V | head -n 1)" != "5.65" ]]; then
-            paired_devices_cmd="paired-devices"
+            paired_devices_cmd=(paired-devices)
         fi
 
-        mapfile -t paired_devices < <(bluetoothctl $paired_devices_cmd | grep Device | cut -d ' ' -f 2)
+        mapfile -t paired_devices < <(bluetoothctl "${paired_devices_cmd[@]}" | grep Device | cut -d ' ' -f 2)
         counter=0
 
         for device in "${paired_devices[@]}"; do

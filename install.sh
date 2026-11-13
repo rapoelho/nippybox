@@ -41,7 +41,7 @@ installDesktop () {
 
 	echo -e "\n## Instalando dependências dos Scripts"
 	sleep 2
-	sudo xbps-install -y maim xclip slop ffmpeg playerctl brightnessctl xcolor xprop ImageMagick betterlockscreen pulseaudio-utils
+	sudo xbps-install -y maim xclip slop ffmpeg playerctl brightnessctl xcolor xprop ImageMagick betterlockscreen pulseaudio-utils upower
 
 	echo -e "\n ## Instalando Pipewire..."
 	sleep 2
@@ -87,9 +87,7 @@ installApps () {
 
 	echo "## Instalando Módulos do Python..."
 	sleep 2
-	sudo xbps-install -y python3-pip python3-pipx python3-Pillow python3-xlib python3-psutil
-	sudo pipx ensurepath --global
-	sudo pipx install pyperclip dbus_next --global
+	sudo xbps-install -y python3-pip python3-Pillow python3-xlib python3-psutil python3-gobject python3-dbus python3-pyperclip python3-dbus-fast
 	
 	echo -e "\n## Instalando o LightDM..."
 	sleep 2

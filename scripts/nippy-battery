@@ -186,14 +186,18 @@ def main():
     batteries_str = " ".join(battery_parts)
 
     # Formatação baseada no argumento
-    if mode in ("all", "detailed"):
+    if mode in ("detailed"):
         print(
             f"{total_pct}% [{icon} {time_info}] {batteries_str} | {power_w:.2f} W  "
         )
-    elif mode in ("sum", "summary", "total"):
+    elif mode in ("summary"):
         print(f"{total_pct}% [{icon} {time_info} | {power_w:.2f} W]  ")
+    elif mode in ("mini"):
+        print(f"{total_pct}% [{icon}]  ")
+    elif mode in ("time"):
+        print(f"{total_pct}% [{icon} {time_info}]  ")
     else:
-        print(f"{total_pct}% [{icon} {time_info} | {power_w:.2f} W]  ")
+        print(f"{total_pct}% [{icon} {time_info}]  ")
 
 
 if __name__ == "__main__":

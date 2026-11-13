@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+
+import dbus
+from dbus.mainloop.glib import DBusGMainLoop
+from gi.repository import GLib
+
+DBusGMainLoop (set_as_default = True)
+bus = dbus.SystemBus ()
+
+def get_network_status ():
+	try:
+		nm_proxy = bus.get_object ("org.freedesktop.NetworkManager", "/org/freedesktop/NetworkManager")
+		nm_props = dbus.Interface (nm_proxy, "org.freedesktop.DBus.Properties")
+		active_conns = nm_props.Get ("org.freedesktop.NetworkManager", "ActiveConnections")
+		
+		has_wired = False
+		has_wireless = False
+		
+		for path in active_conns:
+			conn_proxy = bus.get_object ("org.freedesktop.NetworkManager", path)
+			conn_props = dbus.Interface (conn_proxy, "org.freedesktop.DBus.Properties")
+			
+			state = conn_props.Get ("org.freedesktop.NetworkManager.Connection.Active", "State")
+			if state != 2:
+				continue
+			
+			conn_type = str (conn_props.Get ("org.freedesktop.NetworkManager.Connection.Active", "Type"))
+			
+			if conn_type == "802-3-ethernet":
+				has_wired = True
+			if conn_type == "802-11-wireless":
+				has_wireless = True
+			
+		if has_wired:
+			return "󰈀  Connected"
+		if has_wireless:
+			return "直 Online"
+			
+		return "  Offline"
+
+	except Exception:
+		return "  Offline"
+
+def on_properties_changed (*args, **kwargs):
+	print (get_network_status (), flush = True)
+	
+print (get_network_status (), flush = True)
+
+bus.add_signal_receiver (
+	on_properties_changed,
+	dbus_interface="org.freedesktop.DBus.Properties",
+	signal_name = "PropertiesChanged",
+	path = "/org/freedesktop/NetworkManager"
+)
+
+bus.add_signal_receiver (
+	on_properties_changed,
+	dbus_interface="org.freedesktop.NetworkManager.Connection.Active",
+	signal_name = "StateChanged"
+)
+
+GLib.MainLoop ().run ()

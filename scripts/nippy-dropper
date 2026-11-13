@@ -1,0 +1,943 @@
+#!/usr/bin/env python3
+"""
+Nippybox Dropper - Temporary drag-and-drop storage area.
+Activated via Super+C shortcut. Stores files in ~/.cache/nippybox/dropper/
+Supports: local files, text selections, URLs, and web images.
+"""
+
+import os
+import sys
+import json
+import logging
+import shutil
+import uuid
+import tempfile
+import threading
+import subprocess
+from pathlib import Path
+from urllib.parse import urlparse
+from datetime import datetime
+
+# GTK3 imports
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')
+from gi.repository import Gtk, Gdk, Gio, GLib, GdkPixbuf
+
+# PIL for thumbnails
+from PIL import Image
+
+# URL downloading
+try:
+    import requests
+    HAS_REQUESTS = True
+except ImportError:
+    import urllib.request
+    HAS_REQUESTS = False
+
+
+# ==================== Configuration ====================
+DROP_DIR = Path.home() / ".cache" / "nippybox" / "dropper"
+MANIFEST_FILE = DROP_DIR / "manifest.json"
+THUMBS_DIR = DROP_DIR / ".thumbs"
+THUMB_SIZE = (128, 128)
+# The directory holds potentially sensitive texts and images
+DROP_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
+try:
+    os.chmod(DROP_DIR, 0o700)
+except OSError:
+    pass
+
+# Thumbnails live outside the item namespace: previously an item named
+# "foo_thumb.png" could be overwritten by the thumbnail of "foo.png".
+THUMBS_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
+try:
+    os.chmod(THUMBS_DIR, 0o700)
+except OSError:
+    pass
+
+# Old manifests may have been created with 644; tighten to 600
+try:
+    os.chmod(MANIFEST_FILE, 0o600)
+except OSError:
+    pass
+
+# Protect the manifest read-modify-write (UI + download thread)
+MANIFEST_LOCK = threading.Lock()
+
+# File + terminal logging (the directory is 0700)
+LOG_FILE = DROP_DIR / "dropper.log"
+logger = logging.getLogger("nippy-dropper")
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    _formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+    _file_handler = logging.FileHandler(LOG_FILE, encoding="utf-8")
+    _file_handler.setFormatter(_formatter)
+    _stream_handler = logging.StreamHandler(sys.stderr)
+    _stream_handler.setFormatter(_formatter)
+    logger.addHandler(_file_handler)
+    logger.addHandler(_stream_handler)
+try:
+    os.chmod(LOG_FILE, 0o600)
+except OSError:
+    pass
+
+
+# ==================== Manifest Management ====================
+def load_manifest():
+    """Load the manifest from disk, ignoring invalid entries."""
+    if not MANIFEST_FILE.exists():
+        return []
+    try:
+        with open(MANIFEST_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as e:
+        logger.warning("Could not load manifest: %s", e)
+        return []
+
+    items = data.get("items", []) if isinstance(data, dict) else []
+    if not isinstance(items, list):
+        logger.warning("Invalid manifest: 'items' is not a list")
+        return []
+
+    valid = []
+    for item in items:
+        if not isinstance(item, dict):
+            logger.warning("Ignoring invalid manifest entry: %r", item)
+            continue
+        # Without id/type/destination the entry can neither be shown nor removed
+        if not item.get("id") or not item.get("type") or not item.get("destination"):
+            logger.warning("Ignoring invalid manifest entry: %r", item)
+            continue
+        valid.append(item)
+    return valid
+
+
+def save_manifest(items):
+    """Save the manifest to disk atomically."""
+    tmp = MANIFEST_FILE.with_suffix(".tmp")
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump({"items": items}, f, indent=2, ensure_ascii=False)
+        os.chmod(tmp, 0o600)
+        tmp.replace(MANIFEST_FILE)
+    except (OSError, TypeError) as e:
+        logger.warning("Could not save manifest: %s", e)
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
+def add_to_manifest(item_type, source, dest_path, thumbnail=None):
+    """Add an item to the manifest."""
+    with MANIFEST_LOCK:
+        items = load_manifest()
+        item = {
+            "id": str(uuid.uuid4())[:8],
+            "type": item_type,
+            "source": str(source),
+            "destination": str(dest_path),
+            "thumbnail": str(thumbnail) if thumbnail else None,
+            "added": datetime.now().isoformat()
+        }
+        items.insert(0, item)  # Newest first
+        save_manifest(items)
+        return item
+
+
+def remove_from_manifest(item_id):
+    """Remove an item from manifest by ID."""
+    with MANIFEST_LOCK:
+        items = load_manifest()
+        items = [it for it in items if it.get("id") != item_id]
+        save_manifest(items)
+
+
+def clear_manifest():
+    """Clear all items from manifest and delete files."""
+    with MANIFEST_LOCK:
+        items = load_manifest()
+        for item in items:
+            dest = Path(item["destination"])
+            try:
+                if dest.is_dir():
+                    shutil.rmtree(dest, ignore_errors=True)
+                else:
+                    dest.unlink(missing_ok=True)
+                if item.get("thumbnail"):
+                    Path(item["thumbnail"]).unlink(missing_ok=True)
+            except OSError:
+                pass
+        save_manifest([])
+
+
+# ==================== Thumbnail Generation ====================
+def create_thumbnail(image_path, size=THUMB_SIZE):
+    """Generate a thumbnail in THUMBS_DIR using Pillow."""
+    thumb_path = THUMBS_DIR / f"{uuid.uuid4().hex}.png"
+    try:
+        with Image.open(image_path) as img:
+            if img.mode in ("RGBA", "P", "LA"):
+                bg = Image.new("RGB", img.size, (255, 255, 255))
+                if img.mode == "P":
+                    img = img.convert("RGBA")
+                if img.mode in ("RGBA", "LA"):
+                    bg.paste(img, mask=img.split()[-1])
+                img = bg
+            elif img.mode != "RGB":
+                img = img.convert("RGB")
+
+            img.thumbnail(size, Image.Resampling.LANCZOS)
+            img.save(thumb_path, format="PNG")
+            return thumb_path
+    except Exception as e:
+        logger.warning("Could not create thumbnail for %s: %s", image_path, e)
+        try:
+            thumb_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+    return None
+
+
+# ==================== URL/Image Download ====================
+def download_to_temp(url, dest_dir=None):
+    """Download a URL to a private temporary file. Returns Path or None."""
+    private_dir = None
+    if dest_dir is None:
+        # mkdtemp creates 0700 with an unpredictable name (avoids symlink in /tmp)
+        private_dir = Path(tempfile.mkdtemp(prefix="nippybox-dropper-"))
+        dest_dir = private_dir
+    else:
+        dest_dir = Path(dest_dir)
+        dest_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+
+    parsed = urlparse(url)
+    filename = Path(parsed.path).name or "download"
+    filename = "".join(c for c in filename if c.isalnum() or c in "._- ")[:100].strip()
+    if filename in ("", ".", ".."):
+        filename = "download"
+
+    dest_path = dest_dir / filename
+    counter = 1
+    while dest_path.exists():
+        stem = dest_path.stem
+        suffix = dest_path.suffix
+        dest_path = dest_dir / f"{stem}_{counter}{suffix}"
+        counter += 1
+
+    try:
+        if HAS_REQUESTS:
+            response = requests.get(url, stream=True, timeout=15)
+            response.raise_for_status()
+            with open(dest_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+        else:
+            with urllib.request.urlopen(url, timeout=15) as response:
+                with open(dest_path, "wb") as f:
+                    shutil.copyfileobj(response, f)
+
+        if dest_path.stat().st_size == 0:
+            dest_path.unlink(missing_ok=True)
+            if private_dir:
+                shutil.rmtree(private_dir, ignore_errors=True)
+            return None
+        os.chmod(dest_path, 0o600)
+        return dest_path
+    except Exception as e:
+        logger.warning("Failed to download %s: %s", url, e)
+        dest_path.unlink(missing_ok=True)
+        if private_dir:
+            shutil.rmtree(private_dir, ignore_errors=True)
+        return None
+
+
+def is_image_url(url):
+    """Check if URL likely points to an image."""
+    parsed = urlparse(url)
+    path = parsed.path.lower()
+    return any(path.endswith(ext) for ext in (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tiff", ".avif"))
+
+
+# ==================== Notification Helper ====================
+def notify(title, message, icon=None):
+    """Send desktop notification via dunstify."""
+    cmd = ["dunstify", "-u", "low", "-h", "string:x-dunst-stack-tag:nippy-dropper", title, message]
+    if icon:
+        cmd.extend(["-i", str(icon)])
+    try:
+        subprocess.run(cmd, check=False, capture_output=True)
+    except Exception:
+        pass
+
+
+# ==================== Drop Processing ====================
+class DropProcessor:
+    """Processes dropped data (files, URIs, text, images)."""
+
+    def __init__(self, window):
+        self.window = window
+        self.items_added = 0
+
+    def process_uri_list(self, uris):
+        """Process a list of file:// URIs or http(s):// URLs.
+
+        Returns how many URIs were accepted (local files or started downloads).
+        """
+        accepted = 0
+        for uri in uris:
+            uri = uri.strip()
+            if not uri:
+                continue
+
+            if uri.startswith("file://"):
+                # Gdk.Uri does not exist in GTK3; GLib resolves and decodes the path
+                try:
+                    filename = GLib.filename_from_uri(uri)[0]
+                except Exception as e:
+                    logger.warning("Invalid URI %s: %s", uri, e)
+                    continue
+                if filename and self._add_local_file(Path(filename)):
+                    accepted += 1
+            elif uri.startswith(("http://", "https://")):
+                threading.Thread(target=self._download_and_add, args=(uri,), daemon=True).start()
+                accepted += 1
+        return accepted
+
+    def process_text(self, text):
+        """Process plain text - create .txt file."""
+        text = text.strip()
+        if not text:
+            return False
+
+        filename = f"text_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        dest = DROP_DIR / filename
+        counter = 1
+        while dest.exists():
+            dest = DROP_DIR / f"text_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{counter}.txt"
+            counter += 1
+
+        try:
+            dest.write_text(text, encoding="utf-8")
+            add_to_manifest("text", text[:50], dest)
+            self.items_added += 1
+            notify("Dropper", f"Text saved: {filename}", dest)
+            logger.info("Text saved: %s", filename)
+            return True
+        except OSError as e:
+            logger.error("Error saving text: %s", e)
+            return False
+
+    def process_image_data(self, pixbuf):
+        """Process raw image data from clipboard/drag."""
+        filename = f"image_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+        dest = DROP_DIR / filename
+        counter = 1
+        while dest.exists():
+            dest = DROP_DIR / f"image_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{counter}.png"
+            counter += 1
+
+        try:
+            pixbuf.savev(str(dest), "png", [], [])
+            thumb = create_thumbnail(dest)
+            add_to_manifest("image", "clipboard/drag", dest, thumb)
+            self.items_added += 1
+            notify("Dropper", f"Image saved: {filename}", thumb or dest)
+            logger.info("Image saved: %s", filename)
+            return True
+        except Exception as e:
+            logger.error("Error saving image: %s", e)
+            return False
+
+    def _add_local_file(self, src_path):
+        """Copy a local file or folder into the Dropper directory."""
+        if not src_path.exists():
+            return False
+
+        is_dir = src_path.is_dir()
+        name = src_path.name or "folder"
+        dest = DROP_DIR / name
+        counter = 1
+        while dest.exists():
+            if is_dir:
+                dest = DROP_DIR / f"{name}_{counter}"
+            else:
+                dest = DROP_DIR / f"{src_path.stem}_{counter}{src_path.suffix}"
+            counter += 1
+
+        try:
+            if is_dir:
+                shutil.copytree(src_path, dest)
+                item_type = "folder"
+            else:
+                shutil.copy2(src_path, dest)
+                item_type = "image" if src_path.suffix.lower() in (".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tiff") else "file"
+
+            thumb = create_thumbnail(dest) if item_type == "image" else None
+            add_to_manifest(item_type, src_path, dest, thumb)
+            self.items_added += 1
+            logger.info("Item added: %s (%s)", dest.name, item_type)
+            kind = "Folder" if is_dir else "File"
+            notify("Dropper", f"{kind} added: {dest.name}", thumb or dest)
+            return True
+        except (OSError, shutil.Error) as e:
+            logger.error("Error copying %s: %s", src_path, e)
+            # copytree/copy2 may leave a partial copy outside the manifest
+            try:
+                if is_dir:
+                    shutil.rmtree(dest, ignore_errors=True)
+                else:
+                    dest.unlink(missing_ok=True)
+            except OSError:
+                pass
+            return False
+
+    def _download_and_add(self, url):
+        """Download URL in background thread."""
+        temp_path = download_to_temp(url)
+        if not temp_path:
+            GLib.idle_add(notify, "Dropper", f"Download failed: {url}")
+            return
+
+        # Private directory created by download_to_temp (when applicable)
+        temp_dir = temp_path.parent if temp_path.parent.name.startswith("nippybox-dropper-") else None
+        filename = temp_path.name
+        dest = DROP_DIR / filename
+        counter = 1
+        while dest.exists():
+            dest = DROP_DIR / f"{temp_path.stem}_{counter}{temp_path.suffix}"
+            counter += 1
+
+        try:
+            shutil.move(str(temp_path), str(dest))
+
+            item_type = "image" if is_image_url(url) else "link"
+            thumb = None
+            if is_image_url(url):
+                thumb = create_thumbnail(dest)
+
+            add_to_manifest(item_type, url, dest, thumb)
+            self.items_added += 1
+            logger.info("Downloaded: %s", dest.name)
+            GLib.idle_add(notify, "Dropper", f"Downloaded: {dest.name}", thumb or dest)
+            GLib.idle_add(self.window._refresh_items_list)
+        except Exception as e:
+            logger.error("Error moving download: %s", e)
+            try:
+                temp_path.unlink(missing_ok=True)
+                if dest.is_dir():
+                    shutil.rmtree(dest, ignore_errors=True)
+                else:
+                    dest.unlink(missing_ok=True)
+            except OSError:
+                pass
+            GLib.idle_add(notify, "Dropper", f"Error saving: {url}")
+        finally:
+            if temp_dir is not None:
+                shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+# ==================== GTK3 Dropper Window ====================
+class DropperWindow(Gtk.ApplicationWindow):
+    def __init__(self, app):
+        super().__init__(application=app, title="Dropper")
+        self.set_default_size(420, 300)
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.set_keep_above(True)
+        self.set_type_hint(Gdk.WindowTypeHint.DIALOG)
+
+        self.processor = DropProcessor(self)
+        self._setup_css()
+        self.connect("key-press-event", self.on_key_press)
+
+        # Root container: without it the window opens empty
+        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        root.set_margin_top(12)
+        root.set_margin_bottom(12)
+        root.set_margin_start(12)
+        root.set_margin_end(12)
+        self.add(root)
+
+        root.pack_start(self._setup_drop_zone(), False, False, 0)
+        root.pack_start(self._setup_items_list(), True, True, 0)
+        self._setup_drag_and_drop()
+
+        self.show_all()
+
+    def _setup_css(self):
+        """Apply custom CSS styling."""
+        css = b"""
+        .dropper-window {
+            background-color: @theme_bg_color;
+        }
+        .drop-zone {
+            border: 2px dashed @selected_bg_color;
+            border-radius: 8px;
+            background-color: alpha(@selected_bg_color, 0.8);
+            min-height: 80px;
+        }
+        .drop-zone:hover,
+        .drop-zone.drag-active {
+            border-color: @selected_bg_color;
+            background-color: alpha(@selected_bg_color, 0.2);
+        }
+        .drop-label {
+            color: @theme_text_color;
+            font-size: 14px;
+        }
+        """
+        provider = Gtk.CssProvider()
+        provider.load_from_data(css)
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+        style_ctx = self.get_style_context()
+        style_ctx.add_class("dropper-window")
+
+    def _setup_drop_zone(self):
+        """Setup the main drop zone area."""
+        self.drop_zone = Gtk.EventBox()
+        self.drop_zone.get_style_context().add_class("drop-zone")
+
+        drop_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        drop_box.set_margin_top(12)
+        drop_box.set_margin_bottom(12)
+        drop_box.set_margin_start(16)
+        drop_box.set_margin_end(16)
+
+        icon = Gtk.Image.new_from_icon_name("media-floppy-symbolic", Gtk.IconSize.DND)
+        icon.get_style_context().add_class("drop-icon")
+
+        self.drop_label = Gtk.Label(label="Drop files here")
+        self.drop_label.set_halign(Gtk.Align.START)
+        self.drop_label.set_ellipsize(3)
+        self.drop_label.set_max_width_chars(40)
+
+        drop_box.pack_start(icon, False, False, 0)
+        drop_box.pack_start(self.drop_label, False, False, 0)
+        self.drop_zone.add(drop_box)
+
+        return self.drop_zone
+
+    def _setup_items_list(self):
+        """Set up the list of dropped items."""
+        section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        section.set_margin_top(12)
+
+        # Header: title on the left, action buttons on the right
+        header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        header.set_margin_start(4)
+        header.set_margin_end(4)
+
+        title = Gtk.Label(label="Items")
+        title.set_halign(Gtk.Align.START)
+        header.pack_start(title, True, True, 0)
+
+        refresh_btn = Gtk.Button.new_from_icon_name("view-refresh-symbolic", Gtk.IconSize.BUTTON)
+        refresh_btn.set_tooltip_text("Refresh list")
+        refresh_btn.connect("clicked", self.on_refresh)
+
+        clear_btn = Gtk.Button.new_from_icon_name("edit-clear-all-symbolic", Gtk.IconSize.BUTTON)
+        clear_btn.set_tooltip_text("Clear all")
+        clear_btn.connect("clicked", self.on_clear_all)
+
+        header.pack_end(clear_btn, False, False, 0)
+        header.pack_end(refresh_btn, False, False, 0)
+        section.pack_start(header, False, False, 0)
+
+        frame = Gtk.Frame()
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_min_content_height(80)
+        scrolled.set_max_content_height(250)
+
+        self.items_listbox = Gtk.ListBox()
+        self.items_listbox.set_selection_mode(Gtk.SelectionMode.SINGLE)
+
+        scrolled.add(self.items_listbox)
+        frame.add(scrolled)
+        section.pack_start(frame, True, True, 0)
+        self._refresh_items_list()
+
+        return section
+
+    def _setup_drag_and_drop(self):
+        """Configure drag-and-drop targets."""
+        targets = [
+            Gtk.TargetEntry.new("text/uri-list", 0, 0),
+            Gtk.TargetEntry.new("text/plain", 0, 1),
+            Gtk.TargetEntry.new("image/png", 0, 2),
+            Gtk.TargetEntry.new("image/jpeg", 0, 3),
+        ]
+
+        self.drop_zone.drag_dest_set(
+            Gtk.DestDefaults.ALL,
+            targets,
+            Gdk.DragAction.COPY
+        )
+
+        self.drop_zone.connect("drag-motion", self.on_drag_motion)
+        self.drop_zone.connect("drag-leave", self.on_drag_leave)
+        self.drop_zone.connect("drag-data-received", self.on_drag_data_received)
+
+    def on_drag_motion(self, widget, context, x, y, time):
+        # In PyGObject, drag_status is a module function (not a context method)
+        Gdk.drag_status(context, Gdk.DragAction.COPY, time)
+        widget.get_style_context().add_class("drag-active")
+        self.drop_label.set_text("Drop to add")
+        return True
+
+    def on_drag_leave(self, widget, context, time):
+        widget.get_style_context().remove_class("drag-active")
+        self.drop_label.set_text("Drop files here")
+        return True
+
+    def on_drag_data_received(self, widget, context, x, y, data, info, time):
+        widget.get_style_context().remove_class("drag-active")
+        self.drop_label.set_text("Drop files here")
+
+        if data.get_length() <= 0:
+            context.finish(False, False, time)
+            return
+
+        success = False
+
+        if info == 0:
+            # text/uri-list: get_text() returns None; the correct call is get_uris()
+            uris = data.get_uris() or []
+            success = self.processor.process_uri_list(uris) > 0
+        elif info == 1:
+            success = self.processor.process_text(data.get_text() or "")
+        elif info in (2, 3):
+            try:
+                pixbuf = GdkPixbuf.Pixbuf.new_from_stream(
+                    Gio.MemoryInputStream.new_from_bytes(
+                        GLib.Bytes.new(data.get_data())
+                    ),
+                    None
+                )
+            except Exception as e:
+                logger.error("Error reading dropped image: %s", e)
+                pixbuf = None
+            if pixbuf:
+                success = self.processor.process_image_data(pixbuf)
+
+        context.finish(success, False, time)
+
+        if success:
+            GLib.timeout_add(500, self._refresh_items_list)
+
+    def _refresh_items_list(self):
+        """Refresh the items list from manifest."""
+        for child in self.items_listbox.get_children():
+            child.destroy()
+
+        items = load_manifest()
+        if not items:
+            row = Gtk.ListBoxRow()
+            row.set_selectable(False)
+            row.set_activatable(False)
+            label = Gtk.Label(label="No items in Dropper. Drag something here!")
+            label.set_halign(Gtk.Align.CENTER)
+            label.set_margin_top(10)
+            label.set_margin_bottom(10)
+            row.add(label)
+            self.items_listbox.add(row)
+        else:
+            for item in items:
+                self._add_item_row(item)
+
+        self.items_listbox.show_all()
+        return False
+
+    def _add_item_row(self, item):
+        """Add a row for an item in the list."""
+        row = Gtk.ListBoxRow()
+        row.item = item
+        row.get_style_context().add_class("item-row")
+
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        box.set_margin_top(8)
+        box.set_margin_bottom(8)
+        box.set_margin_start(12)
+        box.set_margin_end(12)
+
+        thumb_path = item.get("thumbnail")
+        if thumb_path and Path(thumb_path).exists():
+            try:
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(thumb_path, 48, 48, True)
+                img = Gtk.Image.new_from_pixbuf(pixbuf)
+                img.get_style_context().add_class("item-thumb")
+            except Exception:
+                img = Gtk.Image.new_from_icon_name(self._get_icon_for_type(item["type"]), Gtk.IconSize.DIALOG)
+        else:
+            img = Gtk.Image.new_from_icon_name(self._get_icon_for_type(item["type"]), Gtk.IconSize.DIALOG)
+
+        info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        name_label = Gtk.Label(label=Path(item["destination"]).name)
+        name_label.set_halign(Gtk.Align.START)
+        name_label.set_ellipsize(3)
+        name_label.set_max_width_chars(40)
+
+        type_label = Gtk.Label(label=self._get_type_label(item["type"]))
+        type_label.set_halign(Gtk.Align.START)
+        type_label.set_ellipsize(3)
+
+        info_box.pack_start(name_label, False, False, 0)
+        info_box.pack_start(type_label, False, False, 0)
+
+        actions_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+
+        open_btn = Gtk.Button.new_from_icon_name("document-open-symbolic", Gtk.IconSize.BUTTON)
+        open_btn.set_tooltip_text("Open file")
+        open_btn.connect("clicked", self.on_open_item, item)
+
+        copy_btn = Gtk.Button.new_from_icon_name("edit-copy-symbolic", Gtk.IconSize.BUTTON)
+        copy_btn.set_tooltip_text("Copy path")
+        copy_btn.connect("clicked", self.on_copy_path, item)
+
+        remove_btn = Gtk.Button.new_from_icon_name("edit-delete-symbolic", Gtk.IconSize.BUTTON)
+        remove_btn.set_tooltip_text("Remove from Dropper")
+        remove_btn.connect("clicked", self.on_remove_item, item)
+
+        actions_box.pack_start(open_btn, False, False, 0)
+        actions_box.pack_start(copy_btn, False, False, 0)
+        actions_box.pack_start(remove_btn, False, False, 0)
+
+        box.pack_start(img, False, False, 0)
+        box.pack_start(info_box, True, True, 0)
+        box.pack_start(actions_box, False, False, 0)
+
+        # Gtk.ListBoxRow has no window of its own; the EventBox does, and it is
+        # where the drag source can capture press+motion to start the drag.
+        event_box = Gtk.EventBox()
+        event_box.set_visible_window(False)
+        event_box.add(box)
+        row.add(event_box)
+        self._setup_row_drag_source(event_box, item)
+        self.items_listbox.add(row)
+
+    def _setup_row_drag_source(self, widget, item):
+        """Allow dragging the row item to another application."""
+        targets = [
+            Gtk.TargetEntry.new("text/uri-list", 0, 0),
+            Gtk.TargetEntry.new("text/plain", 0, 1),
+            Gtk.TargetEntry.new("image/png", 0, 2),
+        ]
+        target_list = Gtk.TargetList.new(targets)
+        # Register the widget as a drag source and start the drag explicitly
+        # on press: drag_source_set alone does not reliably trigger the drag.
+        widget.drag_source_set(
+            Gdk.ModifierType.BUTTON1_MASK,
+            targets,
+            Gdk.DragAction.COPY
+        )
+        # Only start the drag after a small movement, so a click
+        # selects the row and Delete can remove the selected item.
+        widget.add_events(
+            Gdk.EventMask.BUTTON_PRESS_MASK |
+            Gdk.EventMask.BUTTON_RELEASE_MASK |
+            Gdk.EventMask.POINTER_MOTION_MASK
+        )
+        widget.connect("button-press-event", self.on_row_button_press, target_list)
+        widget.connect("motion-notify-event", self.on_row_motion)
+        widget.connect("button-release-event", self.on_row_release)
+        widget.connect("drag-begin", self.on_row_drag_begin, item)
+        widget.connect("drag-data-get", self.on_drag_data_get, item)
+
+    def on_row_button_press(self, widget, event, target_list):
+        """Record the press; the drag starts on motion (after the threshold)."""
+        widget._drag_press = (event, target_list)
+        return False  # deixa o ListBox selecionar a linha
+
+    def on_row_motion(self, widget, event):
+        """Start the drag when the pointer moves far enough."""
+        press = getattr(widget, "_drag_press", None)
+        if not press:
+            return False
+
+        press_event, target_list = press
+        if (abs(event.x - press_event.x) < 8 and
+                abs(event.y - press_event.y) < 8):
+            return False
+
+        widget._drag_press = None
+        # Use press_event.button: with a left-handed mouse the physical
+        # left button arrives as logical 3, and the drag follows the map.
+        widget.drag_begin_with_coordinates(
+            target_list, Gdk.DragAction.COPY, press_event.button,
+            press_event, int(press_event.x), int(press_event.y)
+        )
+        return True
+
+    def on_row_release(self, widget, event):
+        """Cancel the pending drag if the button is released."""
+        widget._drag_press = None
+        return False
+
+    def on_row_drag_begin(self, widget, context, item):
+        """Set the icon that follows the cursor during the drag."""
+        Gtk.drag_set_icon_name(
+            context, self._get_icon_for_type(item["type"]), 0, 0
+        )
+
+    def on_drag_data_get(self, widget, context, data, info, time, item):
+        """Provide the dragged item data in the requested format."""
+        dest = Path(item["destination"])
+
+        if info == 0:
+            # Local file as a URI (works with file managers)
+            data.set_uris([dest.as_uri()])
+        elif info == 2:
+            try:
+                pixbuf = GdkPixbuf.Pixbuf.new_from_file(str(dest))
+                data.set_pixbuf(pixbuf)
+            except Exception as e:
+                logger.error("Error loading image for drag: %s", e)
+        else:
+            # Text: content for text items, original URL for links
+            text = str(dest)
+            if item["type"] == "text":
+                try:
+                    text = dest.read_text(encoding="utf-8", errors="replace")
+                except OSError:
+                    pass
+            elif item["type"] == "link" and item.get("source"):
+                text = str(item["source"])
+            data.set_text(text, -1)
+
+    def on_key_press(self, widget, event):
+        """Esc closes the window; Delete removes the selected item."""
+        key = Gdk.keyval_name(event.keyval)
+        if key == "Escape":
+            self.destroy()
+            return True
+        if key == "Delete":
+            selected = self.items_listbox.get_selected_row()
+            item = getattr(selected, "item", None) if selected else None
+            if item:
+                self.on_remove_item(None, item)
+                return True
+        return False
+
+    def _get_icon_for_type(self, item_type):
+        icons = {
+            "file": "text-x-generic-symbolic",
+            "folder": "folder-symbolic",
+            "image": "image-x-generic-symbolic",
+            "text": "text-x-generic-symbolic",
+            "link": "text-html-symbolic",
+        }
+        return icons.get(item_type, "text-x-generic-symbolic")
+
+    def _get_type_label(self, item_type):
+        labels = {
+            "file": "File",
+            "folder": "Folder",
+            "image": "Image",
+            "text": "Text",
+            "link": "Link/Download",
+        }
+        return labels.get(item_type, "Item")
+
+    def on_open_item(self, button, item):
+        path = Path(item["destination"])
+        if path.exists():
+            try:
+                subprocess.Popen(["xdg-open", str(path)], start_new_session=True)
+            except Exception as e:
+                logger.error("Error opening file: %s", e)
+
+    def on_copy_path(self, button, item):
+        path = str(Path(item["destination"]))
+        try:
+            clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+            clipboard.set_text(path, -1)
+            clipboard.store()
+            notify("Dropper", f"Path copied: {Path(item['destination']).name}")
+        except Exception as e:
+            logger.error("Error copying path: %s", e)
+
+    def on_refresh(self, button):
+        """Reload the list from the manifest."""
+        self._refresh_items_list()
+        logger.info("List refreshed")
+
+    def on_clear_all(self, button):
+        """Remove all items, with confirmation."""
+        if not load_manifest():
+            return
+
+        dialog = Gtk.MessageDialog(
+            transient_for=self,
+            flags=0,
+            message_type=Gtk.MessageType.QUESTION,
+            buttons=Gtk.ButtonsType.NONE,
+            text="Remove all items from Dropper?",
+        )
+        dialog.format_secondary_text("The copied files will also be deleted.")
+        dialog.add_button("Cancel", Gtk.ResponseType.CANCEL)
+        dialog.add_button("Clear", Gtk.ResponseType.OK)
+        response = dialog.run()
+        dialog.destroy()
+
+        if response == Gtk.ResponseType.OK:
+            clear_manifest()
+            self._refresh_items_list()
+            logger.info("All items removed")
+
+    def on_remove_item(self, button, item):
+        item_id = item["id"]
+        dest = Path(item["destination"])
+        thumb = item.get("thumbnail")
+
+        try:
+            if dest.is_dir():
+                shutil.rmtree(dest, ignore_errors=True)
+            else:
+                dest.unlink(missing_ok=True)
+            if thumb:
+                Path(thumb).unlink(missing_ok=True)
+        except OSError:
+            pass
+
+        remove_from_manifest(item_id)
+        logger.info("Item removed: %s", dest.name)
+        self._refresh_items_list()
+
+
+# ==================== Application ====================
+class DropperApplication(Gtk.Application):
+    def __init__(self):
+        super().__init__(
+            application_id="com.nippybox.Dropper",
+            flags=0
+        )
+        self.window = None
+
+    def do_activate(self):
+        if not self.window:
+            self.window = DropperWindow(self)
+            self.window.connect("destroy", self._on_window_destroy)
+        self.window.present()
+        logger.info("Dropper activated")
+
+    def _on_window_destroy(self, window):
+        """Allow the window to be recreated on the next activation."""
+        self.window = None
+
+    def do_startup(self):
+        Gtk.Application.do_startup(self)
+
+
+# ==================== Main ====================
+def main():
+    app = DropperApplication()
+    return app.run(sys.argv)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

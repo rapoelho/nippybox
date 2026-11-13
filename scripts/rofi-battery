@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+# Import Current Theme
+DIR="$HOME/.config/rofi"
+RASI="$DIR/battery.rasi"
+
+# Get battery information
+bat0_info=""
+bat1_info=""
+
+if [ -d "/sys/class/power_supply/BAT0" ]; then
+    bat0_capacity=$(cat /sys/class/power_supply/BAT0/capacity)
+    bat0_state=$(cat /sys/class/power_supply/BAT0/status)
+    bat0_info="  Internal: $bat0_capacity% [$bat0_state]"
+fi
+
+if [ -d "/sys/class/power_supply/BAT1" ]; then
+    bat1_capacity=$(cat /sys/class/power_supply/BAT1/capacity)
+    bat1_state=$(cat /sys/class/power_supply/BAT1/status)
+    bat1_info="  External: $bat1_capacity% [$bat1_state]"
+fi
+
+BATTERY_INFO="$bat0_info"
+if [ -n "$bat1_info" ]; then
+    BATTERY_INFO="${BATTERY_INFO:+$BATTERY_INFO$'\n'}$bat1_info"
+fi
+[ -n "$BATTERY_INFO" ] || BATTERY_INFO="No battery found"
+
+# Display rofi popup with battery information
+printf '%s\n' "$BATTERY_INFO" | rofi -theme "$RASI" -dmenu -p "    Battery" -mesg "Batteries: $(nippy-battery summary)"

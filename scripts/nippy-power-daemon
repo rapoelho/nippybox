@@ -2,8 +2,8 @@
 import asyncio
 import subprocess
 
-from dbus_next.aio import MessageBus
-from dbus_next.constants import BusType
+from dbus_fast.aio import MessageBus
+from dbus_fast.constants import BusType
 
 low_battery = 30.0
 

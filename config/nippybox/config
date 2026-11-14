@@ -2,6 +2,9 @@
 compositor=picom
 wallpaper="/home/rapoelho/Imagens/Wallpapers/Autumn Countryside Landscape.jpg"
 
+# === WALLPAPER ===
+imageRofiFocus=true
+
 # === MOUSE ===ss
 lefthanded=false
 

@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+
+## Detecta a região de maior interesse em um wallpaper e recorta para ela.
+## Usado pelo fluxo do Rofi para gerar o wallpaper em ~/.config/rofi/shared/wallpaper.png
+
+import argparse
+import os
+import sys
+
+import cv2
+import numpy as np
+
+DEFAULT_PADDING = 0.12
+DEFAULT_MIN_SIZE = 800
+CONF_THRESHOLD = 0.10
+INPUT_SIZE = 640
+WEIGHTS = os.environ.get("NIPPY_YOLO_WEIGHTS", os.path.expanduser("~/.cache/nippy/yolov5s.onnx"))
+
+
+def detect_focus(img: np.ndarray, padding: float, min_size: int) -> np.ndarray | None:
+	## Recorta a bbox do objeto de maior interesse com padding
+	if not os.path.isfile(WEIGHTS):
+		return None
+
+	net = cv2.dnn.readNetFromONNX(WEIGHTS)
+	blob = cv2.dnn.blobFromImage(img, 1 / 32.0, (INPUT_SIZE, INPUT_SIZE), swapRB=True, crop=False)
+	net.setInput(blob)
+	out = net.forward()
+	dets = out[0] if out.ndim == 3 else out
+	if dets.ndim == 2 and dets.shape[1] == 85:
+		detections = dets
+	else:
+		detections = dets.reshape(-1, 85)
+
+	confidences = detections[:, 4]
+	best_conf = float(np.max(confidences))
+	if best_conf < CONF_THRESHOLD:
+		return None
+
+	best = detections[int(np.argmax(confidences))]
+	cx, cy, bw, bh = (float(value) for value in best[:4])
+
+	pad_w = bw * padding
+	pad_h = bh * padding
+	x1 = max(0, int(cx - bw / 2 - pad_w / 2))
+	y1 = max(0, int(cy - bh / 2 - pad_h / 2))
+	x2 = min(INPUT_SIZE, int(cx + bw / 2 + pad_w / 2))
+	y2 = min(INPUT_SIZE, int(cy + bh / 2 + pad_h / 2))
+
+	crop = img[int(y1 * img.shape[0] / INPUT_SIZE):int(y2 * img.shape[0] / INPUT_SIZE), int(x1 * img.shape[1] / INPUT_SIZE):int(x2 * img.shape[1] / INPUT_SIZE)]
+	if crop.size == 0 or min(crop.shape[0], crop.shape[1]) < min_size:
+		return None
+
+	return crop
+
+
+def main() -> int:
+	parser = argparse.ArgumentParser()
+	parser.add_argument("image")
+	parser.add_argument("--output", required=True)
+	parser.add_argument("--padding", type=float, default=DEFAULT_PADDING)
+	parser.add_argument("--min-size", type=int, default=DEFAULT_MIN_SIZE)
+	args = parser.parse_args()
+
+	img = cv2.imread(args.image)
+	if img is None:
+		return 1
+
+	crop = detect_focus(img, args.padding, args.min_size)
+	if crop is None:
+		return 1
+
+	out_dir = os.path.dirname(os.path.abspath(args.output))
+	os.makedirs(out_dir, exist_ok=True)
+	cv2.imwrite(args.output, crop)
+	return 0
+
+
+if __name__ == "__main__":
+	sys.exit(main())

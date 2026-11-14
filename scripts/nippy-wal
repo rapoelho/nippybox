@@ -10,6 +10,21 @@ wall_colorizer () {
 set_wallpaper() {	
 	feh --bg-fill "$@"
 
+	if [ -f "$HOME/.config/nippybox/config" ]; then
+		# shellcheck source=/dev/null
+		source "$HOME/.config/nippybox/config"
+	fi
+
+	if [[ "${imageRofiFocus:-false}" == "true" ]]; then
+		focusedCrop="$(mktemp /tmp/nippy-wallfocus-crop.XXXXXX.png)"
+		if python3 "$HOME/.local/bin/nippy-wallfocus" "$1" --output "$focusedCrop"; then
+			magick "$focusedCrop" -resize 1000x1000^ -define crop:smart-crop=true -crop 800x800+0+0 +repage -quality 00 "$HOME/.config/rofi/shared/wallpaper.png"
+			rm -f "$focusedCrop"
+			return 0
+		fi
+		rm -f "$focusedCrop"
+	fi
+
 	magick "$@" -resize 1000x1000^ -define crop:smart-crop=true -crop 800x800+0+0 +repage -quality 00 "$HOME/.config/rofi/shared/wallpaper.png"
 }
 ## Set lockscreen -----------------------------

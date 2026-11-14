@@ -43,7 +43,7 @@ installDesktop () {
 
 	echo -e "\n## Instalando dependências dos Scripts"
 	sleep 2
-	sudo xbps-install -y maim xclip slop ffmpeg playerctl brightnessctl xcolor xprop ImageMagick betterlockscreen pulseaudio-utils upower
+	sudo xbps-install -y maim xclip slop ffmpeg playerctl brightnessctl xcolor xprop ImageMagick betterlockscreen pulseaudio-utils upower libopencv-python3
 
 	echo -e "\n ## Instalando Pipewire..."
 	sleep 2
@@ -111,6 +111,14 @@ installFonts () {
 	echo -e "\n## Instalando as Fontes..."
 	sudo cp fonts/* /usr/share/fonts
 	sudo fc-cache -fv
+}
+
+installYolo () {
+	echo -e "\n## Baixando o Modelo YOLO (YOLOv5s) para Detecção de Wallpaper..."
+	mkdir -p "$HOME/.cache/nippy"
+	if [ ! -f "$HOME/.cache/nippy/yolov5s.onnx" ]; then
+		curl -fsSL "https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5s.onnx" -o "$HOME/.cache/nippy/yolov5s.onnx"
+	fi
 }
 
 copyConfigs () {
@@ -227,6 +235,7 @@ installApps
 installFonts
 enableServices
 installTLP
+installYolo
 
 copyConfigs
 enablePowerDaemon

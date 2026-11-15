@@ -583,7 +583,7 @@
     <!-- Apps -->
     <keybind key="W-A-space">
       <action name="Execute">
-        <command>skippy-xd --toggle-window-picker</command>
+        <command>skippy-xd --toggle</command>
       </action>
     </keybind>
     <keybind key="W-C-Tab">

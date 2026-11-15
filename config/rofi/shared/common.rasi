@@ -14,14 +14,12 @@ configuration {
 	me-accept-entry: "!MousePrimary";
 
 matching: "fuzzy";
+font:                        "Iosevka Nerd Font 9.2";
 }
 /*****----- Global Properties -----*****/
 
 @import                          "shared/colors.rasi"
 
-* {
-    font:                        "JetBrains Mono Nerd Font 9";
-}
 
 /*****----- Main Window -----*****/
 window {

@@ -147,7 +147,7 @@ def main():
     primary = batteries[0]
 
     if is_full:
-        print("Full")
+        print("Full  ")
         return
 
     if charging:
@@ -186,15 +186,13 @@ def main():
     batteries_str = " ".join(battery_parts)
 
     # Formatação baseada no argumento
-    if mode == "detailed":
-        print(
-            f"{total_pct}% [{icon} {time_info}] {batteries_str} | {power_w:.2f} W  "
-        )
-    elif mode == "summary":
+    if mode in ("detailed"):
+        print(f"{total_pct}% [{icon} {time_info}] {batteries_str} | {power_w:.2f} W  ")
+    elif mode in ("summary"):
         print(f"{total_pct}% [{icon} {time_info} | {power_w:.2f} W]  ")
-    elif mode == "mini":
+    elif mode in ("mini"):
         print(f"{total_pct}% [{icon}]  ")
-    elif mode == "time":
+    elif mode in ("time"):
         print(f"{total_pct}% [{icon} {time_info}]  ")
     else:
         print(f"{total_pct}% [{icon} {time_info}]  ")

@@ -30,43 +30,43 @@
     <animateIconify>yes</animateIconify>
     <!-- Active Window Font -->
     <font place="ActiveWindow">
-      <name>Luxi Sans [bh]</name>
-      <size>8</size>
+      <name>Iosevka</name>
+      <size>9</size>
       <weight>Normal</weight>
       <slant>Normal</slant>
     </font>
     <!-- Inactive Window Font -->
     <font place="InactiveWindow">
-      <name>Luxi Sans [BH ]</name>
-      <size>8</size>
+      <name>Iosevka</name>
+      <size>9</size>
       <weight>Normal</weight>
       <slant>Normal</slant>
     </font>
     <!-- Menu Header Font -->
     <font place="MenuHeader">
-      <name>Luxi Sans [BH ]</name>
-      <size>8</size>
+      <name>Iosevka</name>
+      <size>9</size>
       <weight>Bold</weight>
       <slant>Normal</slant>
     </font>
     <!-- Menu Item Font -->
     <font place="MenuItem">
-      <name>Luxi Sans [BH ]</name>
-      <size>8</size>
+      <name>Iosevka</name>
+      <size>9</size>
       <weight>Normal</weight>
       <slant>Normal</slant>
     </font>
     <!-- Active OSD Font -->
     <font place="ActiveOnScreenDisplay">
-      <name>Luxi Sans [BH ]</name>
-      <size>8</size>
+      <name>Iosevka</name>
+      <size>9</size>
       <weight>Normal</weight>
       <slant>Normal</slant>
     </font>
     <!-- Inactive OSD Font -->
     <font place="InactiveOnScreenDisplay">
-      <name>Luxi Sans [BH ]</name>
-      <size>8</size>
+      <name>Iosevka</name>
+      <size>9</size>
       <weight>Normal</weight>
       <slant>Normal</slant>
     </font>
@@ -1085,13 +1085,12 @@
     <applicationIcons>no</applicationIcons>
   </menu>
   <applications>
-	  
-	<application class="Polybar">
-		<decor>no</decor>
-		<shade>no</shade>
-		<skip_pager>yes</skip_pager>
-		<skip_taskbar>yes</skip_taskbar>
-	</application>
+    <application class="Polybar">
+      <decor>no</decor>
+      <shade>no</shade>
+      <skip_pager>yes</skip_pager>
+      <skip_taskbar>yes</skip_taskbar>
+    </application>
     <!-- Nitrogen Configs -->
     <application title="Nitrogen">
       <position force="yes">

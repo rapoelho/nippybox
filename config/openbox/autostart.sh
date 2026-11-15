@@ -20,9 +20,6 @@ pipewire &
 ## Polybar
 polybar -r &
 
-## Conky
-conky &
-
 ## Clippy
 nippy-clippy-daemon &
 
@@ -37,3 +34,6 @@ nippy-compositor start &
 
 ## Exposé
 skippy-xd --start-daemon &
+
+## Conky
+conky &

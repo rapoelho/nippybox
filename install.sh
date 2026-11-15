@@ -94,6 +94,10 @@ installApps () {
 	echo -e "\n## Instalando o LightDM..."
 	sleep 2
 	sudo xbps-install -y lightdm lightdm-gtk-greeter
+	
+	echo -e "\n Instalando o Skippy-xd"
+	sleep 2
+	sudo xbps-install --repository=binpkgs skippy-xd
 
 }
 

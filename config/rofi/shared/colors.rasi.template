@@ -1,10 +1,9 @@
-@import							 "catppuccin-mocha.rasi"
-
 * {
-    background:     @base;
-    background-alt: @crust;
-    foreground:     @text;
-    selected:       [ROFI_SELECTED];
-    active:         [ROFI_ACTIVE];
-    urgent:         [ROFI_URGENT];
+   background:     #1e1e2e;
+   background-alt: #11111b;
+   foreground:     #cdd6f4;
+
+   selected:       [ROFI_SELECTED];
+   active:         [ROFI_ACTIVE];
+   urgent:         [ROFI_URGENT];
 }

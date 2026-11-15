@@ -97,7 +97,7 @@ installApps () {
 	
 	echo -e "\n Instalando o Skippy-xd"
 	sleep 2
-	sudo xbps-install --repository=binpkgs skippy-xd
+	sudo xbps-install -y --repository=binpkgs skippy-xd
 
 }
 

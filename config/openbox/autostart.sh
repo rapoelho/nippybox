@@ -36,4 +36,4 @@ nippy-compositor start &
 skippy-xd --start-daemon &
 
 ## Conky
-conky &
+(sleep 10; conky) &

@@ -440,9 +440,6 @@
       <action name="MoveToEdgeSouth"/>
     </keybind>
     <!-- Action: Close Window -->
-    <!-- <keybind key="W-c">
-      <action name="Close"/>
-    </keybind> -->
     <keybind key="W-q">
       <action name="Close"/>
     </keybind>
@@ -584,14 +581,24 @@
     </keybind>
     <!-- ################################ Launch Applications ################################ -->
     <!-- Apps -->
+    <keybind key="W-A-space">
+      <action name="Execute">
+        <command>skippy-xd --toggle-window-picker</command>
+      </action>
+    </keybind>
+    <keybind key="W-C-Tab">
+      <action name="Execute">
+        <command>rofi-launcher window</command>
+      </action>
+    </keybind>
+    <keybind key="W-c">
+      <action name="Execute">
+        <command>nippy-dropper</command>
+      </action>
+    </keybind>
     <keybind key="W-T">
       <action name="Execute">
         <command>alacritty</command>
-      </action>
-    </keybind>
-    <keybind key="S-W-t">
-      <action name="Execute">
-        <command>xfce4-terminal</command>
       </action>
     </keybind>
     <keybind key="W-f">
@@ -655,6 +662,11 @@
         <command>rofi-powermenu</command>
       </action>
     </keybind>
+    <keybind key="W-S-s">
+      <action name="Execute">
+        <command>nippy-rec --rofi</command>
+      </action>
+    </keybind>
     <keybind key="W-s">
       <action name="Execute">
         <command>nippy-shot --rofi</command>
@@ -699,11 +711,6 @@
     <keybind key="W-p">
       <action name="Execute">
         <command>nippy-colorpicker rofi</command>
-      </action>
-    </keybind>
-    <keybind key="W-c">
-      <action name="Execute">
-        <command>nippy-dropper</command>
       </action>
     </keybind>
     <!--<keybind key="C-A-m">

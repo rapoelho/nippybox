@@ -4,7 +4,7 @@
     background:     @base;
     background-alt: @crust;
     foreground:     @text;
-    selected:       #94e2d5;
-    active:         #04a5e5;
-    urgent:         #94e2d5;
+    selected:       #89b4fa;
+    active:         #7287fd;
+    urgent:         #89b4fa;
 }

@@ -17,9 +17,6 @@ fi
 # Pipewire
 pipewire &
 
-## Picom
-picom &
-
 ## Polybar
 polybar -r &
 
@@ -29,5 +26,14 @@ conky &
 ## Clippy
 nippy-clippy-daemon &
 
-## Keyboard/Mouse Settings
+## Thunar
+thunar --daemon &
+
+## Keyboard/Mouse Configs
 nippy-session &
+
+## Compositor
+nippy-compositor start &
+
+## Exposé
+skippy-xd --start-daemon &
